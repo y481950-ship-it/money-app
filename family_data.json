@@ -1,0 +1,14 @@
+{
+  "transactions": [],
+  "fixed_expenses": [
+    {
+      "id": 1,
+      "name": "집대출",
+      "amount": 1136781,
+      "due_day": 12,
+      "category": "주거/통신",
+      "payment": "계좌이체",
+      "memo": "카카오뱅크"
+    }
+  ]
+}
