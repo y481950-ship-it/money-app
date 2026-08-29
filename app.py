@@ -6,6 +6,8 @@ from flask import Flask, render_template_string, request, jsonify
 
 app = Flask(__name__)
 
+# 고정 비밀번호 및 API 키 설정
+CORRECT_PIN = "771306"
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 DB_PATH = "family_money.db"
 
@@ -15,7 +17,6 @@ def init_db():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS transactions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            pin TEXT NOT NULL,
             type TEXT NOT NULL,
             amount INTEGER NOT NULL,
             date TEXT NOT NULL,
@@ -48,9 +49,10 @@ HTML_TEMPLATE = """
         <div class="w-full max-w-xs text-center space-y-4">
             <div class="text-4xl">🔒</div>
             <h2 class="text-xl font-bold text-gray-800">부부 가계부 잠금</h2>
-            <p class="text-xs text-gray-500">두 분만 사용할 6자리 비밀번호를 입력하세요.</p>
-            <input type="password" id="input-pin" maxlength="6" pattern="[0-9]*" inputmode="numeric" placeholder="6자리 숫자 입력" class="w-full text-center text-2xl tracking-widest border-2 border-blue-500 rounded-lg py-3 focus:outline-none focus:ring-2 focus:ring-blue-600 bg-gray-50 font-bold">
+            <p class="text-xs text-gray-500">지정된 6자리 비밀번호를 입력하세요.</p>
+            <input type="password" id="input-pin" maxlength="6" pattern="[0-9]*" inputmode="numeric" placeholder="6자리 숫자" class="w-full text-center text-2xl tracking-widest border-2 border-blue-500 rounded-lg py-3 focus:outline-none focus:ring-2 focus:ring-blue-600 bg-gray-50 font-bold">
             <button id="btn-unlock" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg shadow hover:bg-blue-700 transition">입장하기</button>
+            <p id="pin-error" class="hidden text-xs text-red-500 font-bold">비밀번호가 일치하지 않습니다.</p>
         </div>
     </div>
 
@@ -80,7 +82,7 @@ HTML_TEMPLATE = """
             </div>
         </div>
 
-        <!-- 영수증 AI 자동인식 카메라 버튼 바 -->
+        <!-- 영수증 AI 자동인식 카메라 버튼 -->
         <div class="px-4 pt-3 pb-1 bg-gray-50 flex items-center gap-2">
             <input type="file" id="receipt-camera" accept="image/*" capture="environment" class="hidden">
             <button type="button" id="btn-camera" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow transition">
@@ -179,30 +181,45 @@ HTML_TEMPLATE = """
         document.getElementById('tx-date').value = new Date().toISOString().slice(0, 10);
         document.getElementById('current-month').innerText = `${new Date().getFullYear()}년 ${new Date().getMonth() + 1}월`;
 
-        function checkPinAuth() {
-            if (currentPin && currentPin.length === 6) {
+        async function verifyAndEnter(pin) {
+            const res = await fetch('/api/verify-pin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pin: pin })
+            });
+            const data = await res.json();
+            if (data.valid) {
+                currentPin = pin;
+                localStorage.setItem('family_pin', pin);
+                document.getElementById('pin-error').classList.add('hidden');
                 document.getElementById('pin-screen').classList.add('hidden');
                 document.getElementById('main-app').classList.remove('hidden');
                 fetchTransactions();
             } else {
+                localStorage.removeItem('family_pin');
+                document.getElementById('pin-error').classList.remove('hidden');
                 document.getElementById('pin-screen').classList.remove('hidden');
                 document.getElementById('main-app').classList.add('hidden');
             }
         }
 
+        if (currentPin) {
+            verifyAndEnter(currentPin);
+        }
+
         document.getElementById('btn-unlock').addEventListener('click', () => {
             const val = document.getElementById('input-pin').value.trim();
             if (val.length !== 6) return alert('6자리 숫자를 입력해 주세요.');
-            currentPin = val;
-            localStorage.setItem('family_pin', currentPin);
-            checkPinAuth();
+            verifyAndEnter(val);
         });
 
         document.getElementById('btn-lock').addEventListener('click', () => {
             localStorage.removeItem('family_pin');
             currentPin = '';
             document.getElementById('input-pin').value = '';
-            checkPinAuth();
+            document.getElementById('pin-error').classList.add('hidden');
+            document.getElementById('pin-screen').classList.remove('hidden');
+            document.getElementById('main-app').classList.add('hidden');
         });
 
         function renderCategoryChips() {
@@ -255,7 +272,6 @@ HTML_TEMPLATE = """
             });
         });
 
-        // 영수증 카메라 촬영 핸들러
         document.getElementById('btn-camera').addEventListener('click', () => {
             document.getElementById('receipt-camera').click();
         });
@@ -276,7 +292,7 @@ HTML_TEMPLATE = """
                     const res = await fetch('/api/receipt-ocr', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ image: base64Data, mimeType: mimeType })
+                        body: JSON.stringify({ image: base64Data, mimeType: mimeType, pin: currentPin })
                     });
                     const data = await res.json();
                     loadingEl.classList.add('hidden');
@@ -295,7 +311,7 @@ HTML_TEMPLATE = """
                         document.getElementById('tx-custom-category').value = data.category;
                     }
                     renderCategoryChips();
-                    alert('영수증 인식이 완료되었습니다. 내용을 확인 후 [추가하기]를 눌러주세요.');
+                    alert('영수증 인식이 완료되었습니다. 확인 후 [추가하기]를 눌러주세요.');
                 } catch (err) {
                     loadingEl.classList.add('hidden');
                     alert('영수증 인식 실패: ' + err.message);
@@ -509,7 +525,7 @@ HTML_TEMPLATE = """
                 const res = await fetch('/api/analyze', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ transactions })
+                    body: JSON.stringify({ transactions, pin: currentPin })
                 });
                 const data = await res.json();
                 resEl.innerText = data.analysis || '분석을 완료하지 못했습니다.';
@@ -519,7 +535,6 @@ HTML_TEMPLATE = """
         });
 
         renderCategoryChips();
-        checkPinAuth();
     </script>
 </body>
 </html>
@@ -547,20 +562,26 @@ def manifest():
         "display": "standalone"
     })
 
+@app.route("/api/verify-pin", methods=["POST"])
+def verify_pin():
+    data = request.get_json() or {}
+    pin = data.get("pin", "")
+    return jsonify({"valid": (pin == CORRECT_PIN)})
+
 @app.route("/api/transactions", methods=["GET", "POST"])
 def handle_transactions():
+    pin = request.args.get("pin") if request.method == "GET" else (request.get_json() or {}).get("pin")
+    if pin != CORRECT_PIN:
+        return jsonify({"error": "인증 실패"}), 403
+
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     if request.method == "GET":
-        pin = request.args.get("pin", "")
-        if not pin or len(pin) != 6:
-            conn.close()
-            return jsonify([]), 400
-        cursor.execute("SELECT id, pin, type, amount, date, category, payment, memo FROM transactions WHERE pin = ? ORDER BY date DESC, id DESC", (pin,))
+        cursor.execute("SELECT id, type, amount, date, category, payment, memo FROM transactions ORDER BY date DESC, id DESC")
         rows = cursor.fetchall()
         data = [
-            {"id": r[0], "type": r[2], "amount": r[3], "date": r[4], "category": r[5], "payment": r[6], "memo": r[7]}
+            {"id": r[0], "type": r[1], "amount": r[2], "date": r[3], "category": r[4], "payment": r[5], "memo": r[6]}
             for r in rows
         ]
         conn.close()
@@ -568,20 +589,20 @@ def handle_transactions():
 
     elif request.method == "POST":
         req = request.get_json() or {}
-        pin = req.get("pin", "")
-        if not pin or len(pin) != 6:
-            conn.close()
-            return jsonify({"error": "잘못된 PIN입니다."}), 400
         cursor.execute("""
-            INSERT INTO transactions (pin, type, amount, date, category, payment, memo)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (pin, req.get("type"), req.get("amount"), req.get("date"), req.get("category"), req.get("payment"), req.get("memo", "")))
+            INSERT INTO transactions (type, amount, date, category, payment, memo)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (req.get("type"), req.get("amount"), req.get("date"), req.get("category"), req.get("payment"), req.get("memo", "")))
         conn.commit()
         conn.close()
         return jsonify({"status": "success"})
 
 @app.route("/api/transactions/<int:tx_id>", methods=["PUT", "DELETE"])
 def modify_transaction(tx_id):
+    pin = request.args.get("pin") if request.method == "DELETE" else (request.get_json() or {}).get("pin")
+    if pin != CORRECT_PIN:
+        return jsonify({"error": "인증 실패"}), 403
+
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
@@ -590,25 +611,27 @@ def modify_transaction(tx_id):
         cursor.execute("""
             UPDATE transactions
             SET type = ?, amount = ?, date = ?, category = ?, payment = ?, memo = ?
-            WHERE id = ? AND pin = ?
-        """, (req.get("type"), req.get("amount"), req.get("date"), req.get("category"), req.get("payment"), req.get("memo", ""), tx_id, req.get("pin")))
+            WHERE id = ?
+        """, (req.get("type"), req.get("amount"), req.get("date"), req.get("category"), req.get("payment"), req.get("memo", ""), tx_id))
         conn.commit()
         conn.close()
         return jsonify({"status": "updated"})
 
     elif request.method == "DELETE":
-        pin = request.args.get("pin", "")
-        cursor.execute("DELETE FROM transactions WHERE id = ? AND pin = ?", (tx_id, pin))
+        cursor.execute("DELETE FROM transactions WHERE id = ?", (tx_id,))
         conn.commit()
         conn.close()
         return jsonify({"status": "deleted"})
 
 @app.route("/api/receipt-ocr", methods=["POST"])
 def receipt_ocr():
+    data = request.get_json() or {}
+    if data.get("pin") != CORRECT_PIN:
+        return jsonify({"error": "인증 실패"}), 403
+
     if not GEMINI_API_KEY:
         return jsonify({"error": "GEMINI_API_KEY가 없습니다."}), 500
 
-    data = request.get_json() or {}
     image_base64 = data.get("image")
     mime_type = data.get("mimeType", "image/jpeg")
 
@@ -656,10 +679,13 @@ def receipt_ocr():
 
 @app.route("/api/analyze", methods=["POST"])
 def analyze():
+    data = request.get_json() or {}
+    if data.get("pin") != CORRECT_PIN:
+        return jsonify({"error": "인증 실패"}), 403
+
     if not GEMINI_API_KEY:
         return jsonify({"analysis": "GEMINI_API_KEY가 등록되지 않았습니다."})
 
-    data = request.get_json() or {}
     txs = data.get("transactions", [])
     if not txs:
         return jsonify({"analysis": "분석할 데이터가 없습니다."})
