@@ -9,6 +9,16 @@
       "payment": "계좌이체",
       "memo": "[고정지출] 집대출 (카카오뱅크)",
       "is_fixed": 1
+    },
+    {
+      "id": 2,
+      "type": "expense",
+      "amount": 482307,
+      "date": "2026-08-13",
+      "category": "기타",
+      "payment": "카드",
+      "memo": "[고정지출] 자동차 (하나카드)",
+      "is_fixed": 1
     }
   ],
   "fixed_expenses": [
