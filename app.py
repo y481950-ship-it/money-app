@@ -14,7 +14,6 @@ DB_PATH = "family_money.db"
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    # 일반 거래 내역 테이블
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS transactions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -27,7 +26,6 @@ def init_db():
             is_fixed INTEGER DEFAULT 0
         )
     """)
-    # 고정지출 마스터 설정 테이블
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS fixed_expenses (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -44,7 +42,6 @@ def init_db():
 
 init_db()
 
-# 매달 접속 시 등록된 고정지출을 해당 월 거래내역에 자동 생성/동기화
 def sync_fixed_expenses_for_current_month():
     today = datetime.date.today()
     year = today.year
@@ -113,7 +110,7 @@ HTML_TEMPLATE = """
             </div>
         </header>
 
-        <!-- 4분할 상세 요약 카드 -->
+        <!-- 상단 4분할 상세 요약 카드 -->
         <div class="p-3 grid grid-cols-4 gap-1.5 bg-blue-50 border-b">
             <div class="bg-white p-2 rounded shadow-sm text-center">
                 <span class="text-[10px] text-gray-500 font-medium">총수입</span>
@@ -135,7 +132,6 @@ HTML_TEMPLATE = """
 
         <!-- [메인 탭: 일반 가계부 뷰] -->
         <div id="view-transactions" class="flex-1 flex flex-col">
-            <!-- 영수증 AI 자동인식 카메라 버튼 -->
             <div class="px-4 pt-3 pb-1 bg-gray-50 flex items-center gap-2">
                 <input type="file" id="receipt-camera" accept="image/*" capture="environment" class="hidden">
                 <button type="button" id="btn-camera" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow transition">
@@ -223,8 +219,8 @@ HTML_TEMPLATE = """
         <!-- [서브 탭: 고정지출 상세 관리 뷰] -->
         <div id="view-fixed" class="hidden flex-1 p-4 space-y-4">
             <div class="bg-orange-50 border border-orange-200 p-3 rounded-lg text-xs text-orange-800">
-                📌 <strong>고정지출 관리 안내</strong><br>
-                매달 나가는 고정지출(관리비, 대출, 통신비 등)의 이름, 출금일(1~31일), 금액을 등록해 두면 <strong>매월 해당 날짜에 맞춰 가계부에 자동 반영</strong>됩니다.
+                📌 <strong>고정지출 관리</strong><br>
+                등록된 고정지출은 상단 요약 카드에 즉시 합산되며, 매월 날짜에 맞춰 가계부 내역에도 자동 반영됩니다.
             </div>
 
             <form id="fixed-form" class="bg-white p-3.5 border rounded-lg shadow-sm space-y-3">
@@ -232,16 +228,14 @@ HTML_TEMPLATE = """
                 <h3 class="font-bold text-xs text-gray-700 border-b pb-1">고정지출 항목 등록 / 수정</h3>
                 
                 <div class="grid grid-cols-2 gap-2">
-                    <input type="text" id="fixed-name" placeholder="항목명 (예: 아파트관리비, 주택대출)" required class="border p-2 rounded text-xs bg-gray-50">
+                    <input type="text" id="fixed-name" placeholder="항목명 (예: 관리비, 대출)" required class="border p-2 rounded text-xs bg-gray-50">
                     <input type="number" id="fixed-amount" placeholder="금액 (원)" required class="border p-2 rounded text-xs bg-gray-50 font-bold">
                 </div>
 
                 <div class="grid grid-cols-3 gap-2">
                     <div>
                         <label class="block text-[10px] text-gray-500 mb-0.5">매월 출금일</label>
-                        <select id="fixed-day" class="w-full border p-1.5 rounded text-xs bg-gray-50">
-                            <!-- 1일~31일 JS 자동 생성 -->
-                        </select>
+                        <select id="fixed-day" class="w-full border p-1.5 rounded text-xs bg-gray-50"></select>
                     </div>
                     <div>
                         <label class="block text-[10px] text-gray-500 mb-0.5">카테고리</label>
@@ -272,7 +266,7 @@ HTML_TEMPLATE = """
             </form>
 
             <div>
-                <h3 class="font-bold text-xs text-gray-700 mb-2">📋 등록된 매월 고정지출 목록 (출금일순 정렬)</h3>
+                <h3 class="font-bold text-xs text-gray-700 mb-2">📋 등록된 고정지출 목록 (출금일순)</h3>
                 <ul id="fixed-list" class="space-y-2"></ul>
             </div>
         </div>
@@ -291,7 +285,6 @@ HTML_TEMPLATE = """
         const expenseCategories = ['식비', '주유/교통', '마트/쇼핑', '생활/문화', '주거/통신', '금융/대출', '기타'];
         const incomeCategories = ['내 급여(10일)', '아내 급여(30일)', '기타 수입'];
 
-        // 고정지출 일자 선택 셀렉트 채우기 (1일~31일)
         const daySelect = document.getElementById('fixed-day');
         for (let d = 1; d <= 31; d++) {
             const opt = document.createElement('option');
@@ -342,7 +335,6 @@ HTML_TEMPLATE = """
             document.getElementById('main-app').classList.add('hidden');
         });
 
-        // 뷰 토글 (가계부 <-> 고정지출 관리)
         document.getElementById('btn-toggle-view').addEventListener('click', () => {
             isFixedView = !isFixedView;
             if (isFixedView) {
@@ -353,8 +345,8 @@ HTML_TEMPLATE = """
                 document.getElementById('view-transactions').classList.remove('hidden');
                 document.getElementById('view-fixed').classList.add('hidden');
                 document.getElementById('btn-toggle-view').innerText = '고정지출 관리';
-                loadAllData();
             }
+            loadAllData();
         });
 
         function renderCategoryChips() {
@@ -407,7 +399,6 @@ HTML_TEMPLATE = """
             });
         });
 
-        // 영수증 카메라 OCR
         document.getElementById('btn-camera').addEventListener('click', () => {
             document.getElementById('receipt-camera').click();
         });
@@ -458,28 +449,17 @@ HTML_TEMPLATE = """
         });
 
         async function loadAllData() {
-            await fetchTransactions();
-            await fetchFixedExpenses();
-        }
-
-        async function fetchTransactions() {
             try {
-                const res = await fetch(`/api/transactions?pin=${currentPin}`);
-                transactions = await res.json();
+                const [txRes, fixedRes] = await Promise.all([
+                    fetch(`/api/transactions?pin=${currentPin}`),
+                    fetch(`/api/fixed-expenses?pin=${currentPin}`)
+                ]);
+                transactions = await txRes.json();
+                fixedExpenses = await fixedRes.json();
                 renderSummary();
                 renderList();
-                renderChart();
-            } catch (err) {
-                console.error(err);
-            }
-        }
-
-        async function fetchFixedExpenses() {
-            try {
-                const res = await fetch(`/api/fixed-expenses?pin=${currentPin}`);
-                fixedExpenses = await res.json();
                 renderFixedList();
-                renderSummary();
+                renderChart();
             } catch (err) {
                 console.error(err);
             }
@@ -487,16 +467,20 @@ HTML_TEMPLATE = """
 
         function renderSummary() {
             let income = 0;
-            let fixedSum = 0;
             let variableSum = 0;
 
             transactions.forEach(t => {
                 if (t.type === 'income') {
                     income += Number(t.amount);
-                } else {
-                    if (t.is_fixed === 1) fixedSum += Number(t.amount);
-                    else variableSum += Number(t.amount);
+                } else if (t.type === 'expense' && t.is_fixed === 0) {
+                    variableSum += Number(t.amount);
                 }
+            });
+
+            // 등록된 고정지출 총합을 직접 계산하여 상단에 즉시 표시
+            let fixedSum = 0;
+            fixedExpenses.forEach(f => {
+                fixedSum += Number(f.amount);
             });
 
             document.getElementById('total-income').innerText = income.toLocaleString() + '원';
@@ -606,7 +590,6 @@ HTML_TEMPLATE = """
             });
         }
 
-        // 거래 추가/수정
         document.getElementById('tx-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const id = document.getElementById('tx-id').value;
@@ -640,7 +623,7 @@ HTML_TEMPLATE = """
                 document.getElementById('tx-memo').value = '';
                 document.getElementById('tx-custom-category').value = '';
             }
-            fetchTransactions();
+            loadAllData();
         });
 
         function editTx(id) {
@@ -689,11 +672,10 @@ HTML_TEMPLATE = """
         async function deleteTx(id) {
             if (confirm('이 내역을 삭제하시겠습니까?')) {
                 await fetch(`/api/transactions/${id}?pin=${currentPin}`, { method: 'DELETE' });
-                fetchTransactions();
+                loadAllData();
             }
         }
 
-        // 고정지출 폼 저장/수정
         document.getElementById('fixed-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const id = document.getElementById('fixed-id').value;
@@ -722,8 +704,8 @@ HTML_TEMPLATE = """
                 });
                 resetFixedForm();
             }
-            fetchFixedExpenses();
-            alert('고정지출이 저장되었으며 이번 달 가계부에도 자동 반영되었습니다.');
+            await loadAllData();
+            alert('고정지출이 저장되었으며 상단 합계 및 이번 달 내역에 즉시 반영되었습니다.');
         });
 
         function editFixed(id) {
@@ -756,7 +738,7 @@ HTML_TEMPLATE = """
         async function deleteFixed(id) {
             if (confirm('이 고정지출을 삭제하시겠습니까?')) {
                 await fetch(`/api/fixed-expenses/${id}?pin=${currentPin}`, { method: 'DELETE' });
-                fetchFixedExpenses();
+                loadAllData();
             }
         }
 
