@@ -1,5 +1,16 @@
 {
-  "transactions": [],
+  "transactions": [
+    {
+      "id": 1,
+      "type": "expense",
+      "amount": 1136781,
+      "date": "2026-08-12",
+      "category": "주거/통신",
+      "payment": "계좌이체",
+      "memo": "[고정지출] 집대출 (카카오뱅크)",
+      "is_fixed": 1
+    }
+  ],
   "fixed_expenses": [
     {
       "id": 1,
