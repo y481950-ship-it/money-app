@@ -1,12 +1,12 @@
 import os
 import json
 import sqlite3
+import datetime
 import requests
 from flask import Flask, render_template_string, request, jsonify
 
 app = Flask(__name__)
 
-# 고정 비밀번호 및 API 키 설정
 CORRECT_PIN = "771306"
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 DB_PATH = "family_money.db"
@@ -14,12 +14,26 @@ DB_PATH = "family_money.db"
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
+    # 일반 거래 내역 테이블
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS transactions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             type TEXT NOT NULL,
             amount INTEGER NOT NULL,
             date TEXT NOT NULL,
+            category TEXT NOT NULL,
+            payment TEXT NOT NULL,
+            memo TEXT,
+            is_fixed INTEGER DEFAULT 0
+        )
+    """)
+    # 고정지출 마스터 설정 테이블
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS fixed_expenses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            amount INTEGER NOT NULL,
+            due_day INTEGER NOT NULL,
             category TEXT NOT NULL,
             payment TEXT NOT NULL,
             memo TEXT
@@ -29,6 +43,36 @@ def init_db():
     conn.close()
 
 init_db()
+
+# 매달 접속 시 등록된 고정지출을 해당 월 거래내역에 자동 생성/동기화
+def sync_fixed_expenses_for_current_month():
+    today = datetime.date.today()
+    year = today.year
+    month = today.month
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT name, amount, due_day, category, payment, memo FROM fixed_expenses")
+    fixed_list = cursor.fetchall()
+
+    for item in fixed_list:
+        name, amount, due_day, category, payment, memo = item
+        try:
+            target_date = datetime.date(year, month, due_day).strftime("%Y-%m-%d")
+        except ValueError:
+            target_date = datetime.date(year, month, 28).strftime("%Y-%m-%d")
+
+        unique_memo = f"[고정지출] {name}" + (f" ({memo})" if memo else "")
+        cursor.execute("SELECT id FROM transactions WHERE is_fixed = 1 AND memo = ? AND date = ?", (unique_memo, target_date))
+        exists = cursor.fetchone()
+        if not exists:
+            cursor.execute("""
+                INSERT INTO transactions (type, amount, date, category, payment, memo, is_fixed)
+                VALUES ('expense', ?, ?, ?, ?, ?, 1)
+            """, (amount, target_date, category, payment, unique_memo))
+
+    conn.commit()
+    conn.close()
 
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -44,7 +88,7 @@ HTML_TEMPLATE = """
 </head>
 <body class="bg-gray-100 text-gray-800 pb-20">
 
-    <!-- 1. PIN 비밀번호 잠금 화면 -->
+    <!-- 1. PIN 잠금 화면 -->
     <div id="pin-screen" class="fixed inset-0 bg-white z-50 flex flex-col justify-center items-center p-6">
         <div class="w-full max-w-xs text-center space-y-4">
             <div class="text-4xl">🔒</div>
@@ -56,113 +100,180 @@ HTML_TEMPLATE = """
         </div>
     </div>
 
-    <!-- 2. 가계부 본 화면 -->
+    <!-- 2. 본 화면 -->
     <div id="main-app" class="hidden max-w-md mx-auto min-h-screen bg-white shadow-md flex flex-col">
         <header class="bg-blue-600 text-white p-4 sticky top-0 z-10 flex justify-between items-center shadow">
             <div>
                 <h1 class="text-base font-bold">💳 우리 부부 가계부</h1>
                 <span id="current-month" class="text-[11px] text-blue-200"></span>
             </div>
-            <button id="btn-lock" class="text-xs bg-blue-700 hover:bg-blue-800 px-2.5 py-1 rounded">잠금</button>
+            <div class="flex gap-2">
+                <button id="btn-toggle-view" class="text-xs bg-blue-500 hover:bg-blue-700 px-2.5 py-1 rounded font-semibold">고정지출 관리</button>
+                <button id="btn-lock" class="text-xs bg-blue-700 hover:bg-blue-800 px-2 py-1 rounded">잠금</button>
+            </div>
         </header>
 
-        <!-- 상단 요약 카드 -->
-        <div class="p-4 grid grid-cols-3 gap-2 bg-blue-50 border-b">
-            <div class="bg-white p-2.5 rounded-lg shadow-sm text-center">
-                <span class="text-[11px] text-gray-500 font-medium">총수입</span>
-                <p id="total-income" class="text-sm font-bold text-blue-600 truncate mt-1">0원</p>
+        <!-- 4분할 상세 요약 카드 -->
+        <div class="p-3 grid grid-cols-4 gap-1.5 bg-blue-50 border-b">
+            <div class="bg-white p-2 rounded shadow-sm text-center">
+                <span class="text-[10px] text-gray-500 font-medium">총수입</span>
+                <p id="total-income" class="text-xs font-bold text-blue-600 truncate mt-0.5">0원</p>
             </div>
-            <div class="bg-white p-2.5 rounded-lg shadow-sm text-center">
-                <span class="text-[11px] text-gray-500 font-medium">총지출</span>
-                <p id="total-expense" class="text-sm font-bold text-red-500 truncate mt-1">0원</p>
+            <div class="bg-white p-2 rounded shadow-sm text-center">
+                <span class="text-[10px] text-gray-500 font-medium">고정지출</span>
+                <p id="total-fixed" class="text-xs font-bold text-orange-600 truncate mt-0.5">0원</p>
             </div>
-            <div class="bg-white p-2.5 rounded-lg shadow-sm text-center">
-                <span class="text-[11px] text-gray-500 font-medium">잔액</span>
-                <p id="balance" class="text-sm font-bold text-gray-800 truncate mt-1">0원</p>
+            <div class="bg-white p-2 rounded shadow-sm text-center">
+                <span class="text-[10px] text-gray-500 font-medium">변동지출</span>
+                <p id="total-variable" class="text-xs font-bold text-red-500 truncate mt-0.5">0원</p>
+            </div>
+            <div class="bg-white p-2 rounded shadow-sm text-center">
+                <span class="text-[10px] text-gray-500 font-medium">남은잔액</span>
+                <p id="balance" class="text-xs font-bold text-gray-800 truncate mt-0.5">0원</p>
             </div>
         </div>
 
-        <!-- 영수증 AI 자동인식 카메라 버튼 -->
-        <div class="px-4 pt-3 pb-1 bg-gray-50 flex items-center gap-2">
-            <input type="file" id="receipt-camera" accept="image/*" capture="environment" class="hidden">
-            <button type="button" id="btn-camera" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow transition">
-                <span>📷 영수증 바로 촬영 / 스캔</span>
-            </button>
-        </div>
-        <div id="ocr-loading" class="hidden px-4 text-center text-xs text-amber-700 font-semibold py-1 bg-amber-50 animate-pulse">
-            Gemini AI가 영수증을 분석하고 있습니다... ⏳
-        </div>
-
-        <!-- 입력 폼 영역 -->
-        <div class="p-4 border-b bg-gray-50 space-y-3">
-            <div class="grid grid-cols-2 gap-2 bg-gray-200 p-1 rounded-lg">
-                <button type="button" id="tab-expense" class="py-2 text-sm font-bold rounded-md bg-red-500 text-white transition">지출 (-)</button>
-                <button type="button" id="tab-income" class="py-2 text-sm font-bold rounded-md text-gray-600 transition">수입 (+)</button>
+        <!-- [메인 탭: 일반 가계부 뷰] -->
+        <div id="view-transactions" class="flex-1 flex flex-col">
+            <!-- 영수증 AI 자동인식 카메라 버튼 -->
+            <div class="px-4 pt-3 pb-1 bg-gray-50 flex items-center gap-2">
+                <input type="file" id="receipt-camera" accept="image/*" capture="environment" class="hidden">
+                <button type="button" id="btn-camera" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow transition">
+                    <span>📷 영수증 바로 촬영 / 스캔</span>
+                </button>
+            </div>
+            <div id="ocr-loading" class="hidden px-4 text-center text-xs text-amber-700 font-semibold py-1 bg-amber-50 animate-pulse">
+                Gemini AI가 영수증을 분석하고 있습니다... ⏳
             </div>
 
-            <form id="tx-form" class="space-y-3">
-                <input type="hidden" id="tx-id">
-                
-                <div>
-                    <input type="number" id="tx-amount" placeholder="금액 입력 (원)" required class="w-full text-base border p-2.5 rounded-lg bg-white font-bold text-right">
+            <!-- 거래 입력 폼 -->
+            <div class="p-4 border-b bg-gray-50 space-y-3">
+                <div class="grid grid-cols-2 gap-2 bg-gray-200 p-1 rounded-lg">
+                    <button type="button" id="tab-expense" class="py-2 text-sm font-bold rounded-md bg-red-500 text-white transition">지출 (-)</button>
+                    <button type="button" id="tab-income" class="py-2 text-sm font-bold rounded-md text-gray-600 transition">수입 (+)</button>
                 </div>
 
-                <div>
-                    <label class="block text-[11px] font-bold text-gray-600 mb-1.5">카테고리 선택</label>
-                    <div id="category-chips" class="flex flex-wrap gap-1.5"></div>
-                    <input type="text" id="tx-custom-category" placeholder="원하는 카테고리 직접 입력 가능" class="w-full mt-2 border p-2 rounded text-xs bg-white">
-                </div>
-
-                <div class="grid grid-cols-2 gap-2">
+                <form id="tx-form" class="space-y-3">
+                    <input type="hidden" id="tx-id">
+                    
                     <div>
-                        <label class="block text-[11px] text-gray-500 mb-0.5">날짜</label>
-                        <input type="date" id="tx-date" required class="w-full border p-2 rounded text-xs bg-white">
+                        <input type="number" id="tx-amount" placeholder="금액 입력 (원)" required class="w-full text-base border p-2.5 rounded-lg bg-white font-bold text-right">
                     </div>
+
                     <div>
-                        <label class="block text-[11px] text-gray-500 mb-0.5">결제수단</label>
-                        <div class="flex gap-1">
-                            <button type="button" class="pay-chip flex-1 py-1.5 text-xs font-semibold rounded border border-blue-600 bg-blue-600 text-white" data-pay="카드">카드</button>
-                            <button type="button" class="pay-chip flex-1 py-1.5 text-xs font-semibold rounded border border-gray-300 bg-white text-gray-600" data-pay="현금">현금</button>
-                            <button type="button" class="pay-chip flex-1 py-1.5 text-xs font-semibold rounded border border-gray-300 bg-white text-gray-600" data-pay="이체">이체</button>
+                        <label class="block text-[11px] font-bold text-gray-600 mb-1.5">카테고리 선택</label>
+                        <div id="category-chips" class="flex flex-wrap gap-1.5"></div>
+                        <input type="text" id="tx-custom-category" placeholder="원하는 카테고리 직접 입력 가능" class="w-full mt-2 border p-2 rounded text-xs bg-white">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[11px] text-gray-500 mb-0.5">날짜</label>
+                            <input type="date" id="tx-date" required class="w-full border p-2 rounded text-xs bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-gray-500 mb-0.5">결제수단</label>
+                            <div class="flex gap-1">
+                                <button type="button" class="pay-chip flex-1 py-1.5 text-xs font-semibold rounded border border-blue-600 bg-blue-600 text-white" data-pay="카드">카드</button>
+                                <button type="button" class="pay-chip flex-1 py-1.5 text-xs font-semibold rounded border border-gray-300 bg-white text-gray-600" data-pay="현금">현금</button>
+                                <button type="button" class="pay-chip flex-1 py-1.5 text-xs font-semibold rounded border border-gray-300 bg-white text-gray-600" data-pay="이체">이체</button>
+                            </div>
                         </div>
                     </div>
+
+                    <input type="text" id="tx-memo" placeholder="메모 (예: 점심 식사, 장보기)" class="w-full border p-2 rounded text-xs bg-white">
+
+                    <div class="flex gap-2 pt-1">
+                        <button type="submit" id="btn-submit" class="flex-1 bg-blue-600 text-white py-2.5 rounded-lg text-sm font-bold shadow hover:bg-blue-700 transition">추가하기</button>
+                        <button type="button" id="btn-cancel-edit" class="hidden px-4 bg-gray-300 text-gray-700 py-2.5 rounded-lg text-sm font-bold">취소</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 대시보드 및 목록 -->
+            <div class="p-4 flex-1 space-y-5">
+                <div class="bg-white p-3 rounded-lg border shadow-sm">
+                    <h2 class="font-bold text-xs text-gray-600 mb-2">📊 지출 요약 차트</h2>
+                    <div class="w-full h-44 flex justify-center items-center">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
                 </div>
 
-                <input type="text" id="tx-memo" placeholder="메모 (예: 외식, 마트 장보기)" class="w-full border p-2 rounded text-xs bg-white">
-
-                <div class="flex gap-2 pt-1">
-                    <button type="submit" id="btn-submit" class="flex-1 bg-blue-600 text-white py-2.5 rounded-lg text-sm font-bold shadow hover:bg-blue-700 transition">추가하기</button>
-                    <button type="button" id="btn-cancel-edit" class="hidden px-4 bg-gray-300 text-gray-700 py-2.5 rounded-lg text-sm font-bold">취소</button>
+                <div class="bg-gradient-to-r from-emerald-50 to-teal-50 p-3.5 rounded-lg border border-emerald-200 shadow-sm">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-bold text-xs text-emerald-800">🤖 부부 재정 AI 코칭</span>
+                        <span class="text-[10px] bg-emerald-200 text-emerald-800 px-1.5 py-0.5 rounded">gemini-3.6-flash</span>
+                    </div>
+                    <button id="btn-ai-analyze" class="w-full bg-emerald-600 text-white py-2 rounded text-xs font-bold hover:bg-emerald-700 shadow transition">
+                        이번 달 지출 패턴 분석 및 절약 조언 받기
+                    </button>
+                    <div id="ai-result" class="hidden mt-2.5 p-3 bg-white border border-emerald-200 rounded text-xs leading-relaxed text-gray-700 whitespace-pre-line"></div>
                 </div>
-            </form>
+
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <h2 class="font-bold text-xs text-gray-600">📝 내역 목록 (<span id="tx-count">0</span>건)</h2>
+                        <button id="btn-export-csv" class="text-xs text-blue-600 hover:underline">CSV 내보내기</button>
+                    </div>
+                    <ul id="tx-list" class="space-y-2"></ul>
+                </div>
+            </div>
         </div>
 
-        <!-- 내용 출력 영역 -->
-        <div class="p-4 flex-1 space-y-5">
-            <div class="bg-white p-3 rounded-lg border shadow-sm">
-                <h2 class="font-bold text-xs text-gray-600 mb-2">📊 지출 요약</h2>
-                <div class="w-full h-44 flex justify-center items-center">
-                    <canvas id="categoryChart"></canvas>
-                </div>
+        <!-- [서브 탭: 고정지출 상세 관리 뷰] -->
+        <div id="view-fixed" class="hidden flex-1 p-4 space-y-4">
+            <div class="bg-orange-50 border border-orange-200 p-3 rounded-lg text-xs text-orange-800">
+                📌 <strong>고정지출 관리 안내</strong><br>
+                매달 나가는 고정지출(관리비, 대출, 통신비 등)의 이름, 출금일(1~31일), 금액을 등록해 두면 <strong>매월 해당 날짜에 맞춰 가계부에 자동 반영</strong>됩니다.
             </div>
 
-            <div class="bg-gradient-to-r from-emerald-50 to-teal-50 p-3.5 rounded-lg border border-emerald-200 shadow-sm">
-                <div class="flex justify-between items-center mb-2">
-                    <span class="font-bold text-xs text-emerald-800">🤖 부부 재정 AI 코칭</span>
-                    <span class="text-[10px] bg-emerald-200 text-emerald-800 px-1.5 py-0.5 rounded">gemini-3.6-flash</span>
+            <form id="fixed-form" class="bg-white p-3.5 border rounded-lg shadow-sm space-y-3">
+                <input type="hidden" id="fixed-id">
+                <h3 class="font-bold text-xs text-gray-700 border-b pb-1">고정지출 항목 등록 / 수정</h3>
+                
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="text" id="fixed-name" placeholder="항목명 (예: 아파트관리비, 주택대출)" required class="border p-2 rounded text-xs bg-gray-50">
+                    <input type="number" id="fixed-amount" placeholder="금액 (원)" required class="border p-2 rounded text-xs bg-gray-50 font-bold">
                 </div>
-                <button id="btn-ai-analyze" class="w-full bg-emerald-600 text-white py-2 rounded text-xs font-bold hover:bg-emerald-700 shadow transition">
-                    이번 달 지출 패턴 분석 및 절약 조언 받기
-                </button>
-                <div id="ai-result" class="hidden mt-2.5 p-3 bg-white border border-emerald-200 rounded text-xs leading-relaxed text-gray-700 whitespace-pre-line"></div>
-            </div>
+
+                <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <label class="block text-[10px] text-gray-500 mb-0.5">매월 출금일</label>
+                        <select id="fixed-day" class="w-full border p-1.5 rounded text-xs bg-gray-50">
+                            <!-- 1일~31일 JS 자동 생성 -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-gray-500 mb-0.5">카테고리</label>
+                        <select id="fixed-category" class="w-full border p-1.5 rounded text-xs bg-gray-50">
+                            <option value="주거/통신">주거/통신</option>
+                            <option value="금융/대출">금융/대출</option>
+                            <option value="보험/세금">보험/세금</option>
+                            <option value="생활/문화">생활/문화</option>
+                            <option value="기타">기타</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-gray-500 mb-0.5">결제방식</label>
+                        <select id="fixed-payment" class="w-full border p-1.5 rounded text-xs bg-gray-50">
+                            <option value="계좌이체">계좌이체</option>
+                            <option value="카드">카드</option>
+                            <option value="현금">현금</option>
+                        </select>
+                    </div>
+                </div>
+
+                <input type="text" id="fixed-memo" placeholder="세부 메모 (예: 국민은행 자동이체)" class="w-full border p-2 rounded text-xs bg-gray-50">
+
+                <div class="flex gap-2">
+                    <button type="submit" id="btn-fixed-submit" class="flex-1 bg-orange-600 text-white py-2 rounded text-xs font-bold hover:bg-orange-700 shadow">고정지출 저장</button>
+                    <button type="button" id="btn-fixed-cancel" class="hidden px-3 bg-gray-300 text-gray-700 py-2 rounded text-xs font-bold">취소</button>
+                </div>
+            </form>
 
             <div>
-                <div class="flex justify-between items-center mb-2">
-                    <h2 class="font-bold text-xs text-gray-600">📝 내역 목록 (<span id="tx-count">0</span>건)</h2>
-                    <button id="btn-export-csv" class="text-xs text-blue-600 hover:underline">CSV 내보내기</button>
-                </div>
-                <ul id="tx-list" class="space-y-2"></ul>
+                <h3 class="font-bold text-xs text-gray-700 mb-2">📋 등록된 매월 고정지출 목록 (출금일순 정렬)</h3>
+                <ul id="fixed-list" class="space-y-2"></ul>
             </div>
         </div>
     </div>
@@ -173,10 +284,21 @@ HTML_TEMPLATE = """
         let currentCategory = '식비';
         let currentPayment = '카드';
         let transactions = [];
+        let fixedExpenses = [];
         let chartInstance = null;
+        let isFixedView = false;
 
-        const expenseCategories = ['식비', '주유/교통', '마트/쇼핑', '생활/문화', '주거/통신', '기타'];
+        const expenseCategories = ['식비', '주유/교통', '마트/쇼핑', '생활/문화', '주거/통신', '금융/대출', '기타'];
         const incomeCategories = ['내 급여(10일)', '아내 급여(30일)', '기타 수입'];
+
+        // 고정지출 일자 선택 셀렉트 채우기 (1일~31일)
+        const daySelect = document.getElementById('fixed-day');
+        for (let d = 1; d <= 31; d++) {
+            const opt = document.createElement('option');
+            opt.value = d;
+            opt.innerText = `매월 ${d}일`;
+            daySelect.appendChild(opt);
+        }
 
         document.getElementById('tx-date').value = new Date().toISOString().slice(0, 10);
         document.getElementById('current-month').innerText = `${new Date().getFullYear()}년 ${new Date().getMonth() + 1}월`;
@@ -194,7 +316,7 @@ HTML_TEMPLATE = """
                 document.getElementById('pin-error').classList.add('hidden');
                 document.getElementById('pin-screen').classList.add('hidden');
                 document.getElementById('main-app').classList.remove('hidden');
-                fetchTransactions();
+                loadAllData();
             } else {
                 localStorage.removeItem('family_pin');
                 document.getElementById('pin-error').classList.remove('hidden');
@@ -203,9 +325,7 @@ HTML_TEMPLATE = """
             }
         }
 
-        if (currentPin) {
-            verifyAndEnter(currentPin);
-        }
+        if (currentPin) verifyAndEnter(currentPin);
 
         document.getElementById('btn-unlock').addEventListener('click', () => {
             const val = document.getElementById('input-pin').value.trim();
@@ -220,6 +340,21 @@ HTML_TEMPLATE = """
             document.getElementById('pin-error').classList.add('hidden');
             document.getElementById('pin-screen').classList.remove('hidden');
             document.getElementById('main-app').classList.add('hidden');
+        });
+
+        // 뷰 토글 (가계부 <-> 고정지출 관리)
+        document.getElementById('btn-toggle-view').addEventListener('click', () => {
+            isFixedView = !isFixedView;
+            if (isFixedView) {
+                document.getElementById('view-transactions').classList.add('hidden');
+                document.getElementById('view-fixed').classList.remove('hidden');
+                document.getElementById('btn-toggle-view').innerText = '가계부 메인';
+            } else {
+                document.getElementById('view-transactions').classList.remove('hidden');
+                document.getElementById('view-fixed').classList.add('hidden');
+                document.getElementById('btn-toggle-view').innerText = '고정지출 관리';
+                loadAllData();
+            }
         });
 
         function renderCategoryChips() {
@@ -272,6 +407,7 @@ HTML_TEMPLATE = """
             });
         });
 
+        // 영수증 카메라 OCR
         document.getElementById('btn-camera').addEventListener('click', () => {
             document.getElementById('receipt-camera').click();
         });
@@ -321,35 +457,56 @@ HTML_TEMPLATE = """
             e.target.value = '';
         });
 
+        async function loadAllData() {
+            await fetchTransactions();
+            await fetchFixedExpenses();
+        }
+
         async function fetchTransactions() {
             try {
                 const res = await fetch(`/api/transactions?pin=${currentPin}`);
                 transactions = await res.json();
-                renderUI();
+                renderSummary();
+                renderList();
+                renderChart();
             } catch (err) {
                 console.error(err);
             }
         }
 
-        function renderUI() {
-            renderSummary();
-            renderList();
-            renderChart();
+        async function fetchFixedExpenses() {
+            try {
+                const res = await fetch(`/api/fixed-expenses?pin=${currentPin}`);
+                fixedExpenses = await res.json();
+                renderFixedList();
+                renderSummary();
+            } catch (err) {
+                console.error(err);
+            }
         }
 
         function renderSummary() {
             let income = 0;
-            let expense = 0;
+            let fixedSum = 0;
+            let variableSum = 0;
+
             transactions.forEach(t => {
-                if (t.type === 'income') income += Number(t.amount);
-                else expense += Number(t.amount);
+                if (t.type === 'income') {
+                    income += Number(t.amount);
+                } else {
+                    if (t.is_fixed === 1) fixedSum += Number(t.amount);
+                    else variableSum += Number(t.amount);
+                }
             });
+
             document.getElementById('total-income').innerText = income.toLocaleString() + '원';
-            document.getElementById('total-expense').innerText = expense.toLocaleString() + '원';
-            const bal = income - expense;
+            document.getElementById('total-fixed').innerText = fixedSum.toLocaleString() + '원';
+            document.getElementById('total-variable').innerText = variableSum.toLocaleString() + '원';
+            
+            const bal = income - (fixedSum + variableSum);
             const balEl = document.getElementById('balance');
             balEl.innerText = bal.toLocaleString() + '원';
-            balEl.className = `text-sm font-bold truncate mt-1 ${bal < 0 ? 'text-red-500' : 'text-gray-800'}`;
+            balEl.className = `text-xs font-bold truncate mt-0.5 ${bal < 0 ? 'text-red-500' : 'text-gray-800'}`;
             document.getElementById('tx-count').innerText = transactions.length;
         }
 
@@ -369,6 +526,7 @@ HTML_TEMPLATE = """
                     <div class="min-w-0 pr-2">
                         <div class="flex items-center gap-1.5">
                             <span class="font-bold text-xs text-gray-800">${t.category}</span>
+                            ${t.is_fixed === 1 ? '<span class="text-[9px] bg-orange-100 text-orange-700 px-1 py-0.5 rounded font-bold">고정</span>' : ''}
                             <span class="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">${t.payment}</span>
                         </div>
                         <div class="text-[11px] text-gray-500 truncate mt-0.5">${t.memo ? t.memo + ' · ' : ''}${t.date}</div>
@@ -380,6 +538,38 @@ HTML_TEMPLATE = """
                         <div class="space-x-1.5 mt-0.5">
                             <button onclick="editTx(${t.id})" class="text-[10px] text-blue-500 hover:underline">수정</button>
                             <button onclick="deleteTx(${t.id})" class="text-[10px] text-red-400 hover:underline">삭제</button>
+                        </div>
+                    </div>
+                `;
+                listEl.appendChild(li);
+            });
+        }
+
+        function renderFixedList() {
+            const listEl = document.getElementById('fixed-list');
+            listEl.innerHTML = '';
+            if (!fixedExpenses.length) {
+                listEl.innerHTML = '<li class="text-center text-xs text-gray-400 py-6">등록된 매월 고정지출이 없습니다.</li>';
+                return;
+            }
+
+            fixedExpenses.forEach(f => {
+                const li = document.createElement('li');
+                li.className = 'p-3 bg-white rounded-lg border border-orange-100 shadow-sm flex justify-between items-center';
+                li.innerHTML = `
+                    <div class="min-w-0 pr-2">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-xs font-bold text-orange-700 bg-orange-50 px-1.5 py-0.5 rounded border border-orange-200">매월 ${f.due_day}일</span>
+                            <span class="font-bold text-xs text-gray-800">${f.name}</span>
+                            <span class="text-[10px] text-gray-500">${f.category} · ${f.payment}</span>
+                        </div>
+                        <div class="text-[11px] text-gray-400 truncate mt-0.5">${f.memo || '메모 없음'}</div>
+                    </div>
+                    <div class="text-right flex-shrink-0">
+                        <div class="font-bold text-sm text-red-500">-${Number(f.amount).toLocaleString()}원</div>
+                        <div class="space-x-1.5 mt-0.5">
+                            <button onclick="editFixed(${f.id})" class="text-[10px] text-blue-500 hover:underline">수정</button>
+                            <button onclick="deleteFixed(${f.id})" class="text-[10px] text-red-400 hover:underline">삭제</button>
                         </div>
                     </div>
                 `;
@@ -416,6 +606,7 @@ HTML_TEMPLATE = """
             });
         }
 
+        // 거래 추가/수정
         document.getElementById('tx-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const id = document.getElementById('tx-id').value;
@@ -502,14 +693,81 @@ HTML_TEMPLATE = """
             }
         }
 
+        // 고정지출 폼 저장/수정
+        document.getElementById('fixed-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('fixed-id').value;
+            const payload = {
+                pin: currentPin,
+                name: document.getElementById('fixed-name').value.trim(),
+                amount: parseInt(document.getElementById('fixed-amount').value, 10),
+                due_day: parseInt(document.getElementById('fixed-day').value, 10),
+                category: document.getElementById('fixed-category').value,
+                payment: document.getElementById('fixed-payment').value,
+                memo: document.getElementById('fixed-memo').value.trim()
+            };
+
+            if (id) {
+                await fetch(`/api/fixed-expenses/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                resetFixedForm();
+            } else {
+                await fetch('/api/fixed-expenses', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                resetFixedForm();
+            }
+            fetchFixedExpenses();
+            alert('고정지출이 저장되었으며 이번 달 가계부에도 자동 반영되었습니다.');
+        });
+
+        function editFixed(id) {
+            const f = fixedExpenses.find(item => item.id === id);
+            if (!f) return;
+            document.getElementById('fixed-id').value = f.id;
+            document.getElementById('fixed-name').value = f.name;
+            document.getElementById('fixed-amount').value = f.amount;
+            document.getElementById('fixed-day').value = f.due_day;
+            document.getElementById('fixed-category').value = f.category;
+            document.getElementById('fixed-payment').value = f.payment;
+            document.getElementById('fixed-memo').value = f.memo || '';
+
+            document.getElementById('btn-fixed-submit').innerText = '고정지출 수정 완료';
+            document.getElementById('btn-fixed-cancel').classList.remove('hidden');
+        }
+
+        document.getElementById('btn-fixed-cancel').addEventListener('click', resetFixedForm);
+
+        function resetFixedForm() {
+            document.getElementById('fixed-id').value = '';
+            document.getElementById('fixed-name').value = '';
+            document.getElementById('fixed-amount').value = '';
+            document.getElementById('fixed-memo').value = '';
+            document.getElementById('fixed-day').value = 1;
+            document.getElementById('btn-fixed-submit').innerText = '고정지출 저장';
+            document.getElementById('btn-fixed-cancel').classList.add('hidden');
+        }
+
+        async function deleteFixed(id) {
+            if (confirm('이 고정지출을 삭제하시겠습니까?')) {
+                await fetch(`/api/fixed-expenses/${id}?pin=${currentPin}`, { method: 'DELETE' });
+                fetchFixedExpenses();
+            }
+        }
+
         document.getElementById('btn-export-csv').addEventListener('click', () => {
             if (!transactions.length) return alert('저장할 내역이 없습니다.');
-            let csv = "날짜,구분,카테고리,금액,결제수단,메모\\n";
+            let csv = "날짜,구분,카테고리,금액,결제수단,메모,고정여부\\n";
             transactions.forEach(t => {
-                csv += `"${t.date}","${t.type === 'expense' ? '지출' : '수입'}","${t.category}",${t.amount},"${t.payment}","${t.memo || ''}"\\n`;
+                csv += `"${t.date}","${t.type === 'expense' ? '지출' : '수입'}","${t.category}",${t.amount},"${t.payment}","${t.memo || ''}","${t.is_fixed ? '고정지출' : '일반'}"\\n`;
             });
             const blob = new Blob(["\\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
+            const link = document.createElement('link');
             link.href = URL.createObjectURL(blob);
             link.download = `부부가계부_${new Date().toISOString().slice(0,10)}.csv`;
             link.click();
@@ -578,10 +836,11 @@ def handle_transactions():
     cursor = conn.cursor()
 
     if request.method == "GET":
-        cursor.execute("SELECT id, type, amount, date, category, payment, memo FROM transactions ORDER BY date DESC, id DESC")
+        sync_fixed_expenses_for_current_month()
+        cursor.execute("SELECT id, type, amount, date, category, payment, memo, is_fixed FROM transactions ORDER BY date DESC, id DESC")
         rows = cursor.fetchall()
         data = [
-            {"id": r[0], "type": r[1], "amount": r[2], "date": r[3], "category": r[4], "payment": r[5], "memo": r[6]}
+            {"id": r[0], "type": r[1], "amount": r[2], "date": r[3], "category": r[4], "payment": r[5], "memo": r[6], "is_fixed": r[7]}
             for r in rows
         ]
         conn.close()
@@ -590,8 +849,8 @@ def handle_transactions():
     elif request.method == "POST":
         req = request.get_json() or {}
         cursor.execute("""
-            INSERT INTO transactions (type, amount, date, category, payment, memo)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO transactions (type, amount, date, category, payment, memo, is_fixed)
+            VALUES (?, ?, ?, ?, ?, ?, 0)
         """, (req.get("type"), req.get("amount"), req.get("date"), req.get("category"), req.get("payment"), req.get("memo", "")))
         conn.commit()
         conn.close()
@@ -623,6 +882,63 @@ def modify_transaction(tx_id):
         conn.close()
         return jsonify({"status": "deleted"})
 
+@app.route("/api/fixed-expenses", methods=["GET", "POST"])
+def handle_fixed_expenses():
+    pin = request.args.get("pin") if request.method == "GET" else (request.get_json() or {}).get("pin")
+    if pin != CORRECT_PIN:
+        return jsonify({"error": "인증 실패"}), 403
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    if request.method == "GET":
+        cursor.execute("SELECT id, name, amount, due_day, category, payment, memo FROM fixed_expenses ORDER BY due_day ASC")
+        rows = cursor.fetchall()
+        data = [
+            {"id": r[0], "name": r[1], "amount": r[2], "due_day": r[3], "category": r[4], "payment": r[5], "memo": r[6]}
+            for r in rows
+        ]
+        conn.close()
+        return jsonify(data)
+
+    elif request.method == "POST":
+        req = request.get_json() or {}
+        cursor.execute("""
+            INSERT INTO fixed_expenses (name, amount, due_day, category, payment, memo)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (req.get("name"), req.get("amount"), req.get("due_day"), req.get("category"), req.get("payment"), req.get("memo", "")))
+        conn.commit()
+        conn.close()
+        sync_fixed_expenses_for_current_month()
+        return jsonify({"status": "success"})
+
+@app.route("/api/fixed-expenses/<int:item_id>", methods=["PUT", "DELETE"])
+def modify_fixed_expenses(item_id):
+    pin = request.args.get("pin") if request.method == "DELETE" else (request.get_json() or {}).get("pin")
+    if pin != CORRECT_PIN:
+        return jsonify({"error": "인증 실패"}), 403
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    if request.method == "PUT":
+        req = request.get_json() or {}
+        cursor.execute("""
+            UPDATE fixed_expenses
+            SET name = ?, amount = ?, due_day = ?, category = ?, payment = ?, memo = ?
+            WHERE id = ?
+        """, (req.get("name"), req.get("amount"), req.get("due_day"), req.get("category"), req.get("payment"), req.get("memo", ""), item_id))
+        conn.commit()
+        conn.close()
+        sync_fixed_expenses_for_current_month()
+        return jsonify({"status": "updated"})
+
+    elif request.method == "DELETE":
+        cursor.execute("DELETE FROM fixed_expenses WHERE id = ?", (item_id,))
+        conn.commit()
+        conn.close()
+        return jsonify({"status": "deleted"})
+
 @app.route("/api/receipt-ocr", methods=["POST"])
 def receipt_ocr():
     data = request.get_json() or {}
@@ -644,7 +960,7 @@ def receipt_ocr():
   "amount": 총 결제금액(숫자만, 예: 15000),
   "date": "결제일자(YYYY-MM-DD 형식, 확인 불가 시 오늘 날짜)",
   "memo": "상호명 또는 주요 품목(예: 스타벅스, 이마트)",
-  "category": "식비" | "주유/교통" | "마트/쇼핑" | "생활/문화" | "주거/통신" | "기타" 중 하나
+  "category": "식비" | "주유/교통" | "마트/쇼핑" | "생활/문화" | "주거/통신" | "금융/대출" | "기타" 중 하나
 }
 """
     url = f"[https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=](https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=){GEMINI_API_KEY}"
@@ -696,15 +1012,15 @@ def analyze():
     ]
     prompt = f"""
 당신은 부부 재정 관리 전문 코치입니다.
-부부의 가계부 수입/지출 내역을 보고 핵심만 직관적으로 피드백해 주세요:
+부부의 가계부 수입/고정지출/변동지출 내역을 보고 핵심만 직관적으로 피드백해 주세요:
 
 [거래 내역]
 {chr(10).join(summary_lines)}
 
 [답변 형식]
-1. 이번 달 재정 요약 (수입 대비 지출 흐름)
-2. 주요 지출 항목 분석
-3. 부부를 위한 실천적 절약 팁 2~3가지
+1. 이번 달 재정 요약 (총수입 대비 고정비/변동비 흐름)
+2. 주요 지출 항목 분석 및 낭비 요인
+3. 부부를 위한 실천적 절약 조언 2~3가지
 """
     url = f"[https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=](https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=){GEMINI_API_KEY}"
     payload = {"contents": [{"parts": [{"text": prompt}]}]}
