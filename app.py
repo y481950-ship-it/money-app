@@ -13,7 +13,6 @@ GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
 GITHUB_REPO = os.environ.get("GITHUB_REPO")
 DATA_FILE = "family_data.json"
 
-# --- GitHub 연동 영구 저장소 함수 ---
 def get_remote_data():
     default_data = {"transactions": [], "fixed_expenses": []}
     if not GITHUB_TOKEN or not GITHUB_REPO:
@@ -330,6 +329,31 @@ HTML_TEMPLATE = """
         document.getElementById('tx-date').value = new Date().toISOString().slice(0, 10);
         document.getElementById('current-month').innerText = `${new Date().getFullYear()}년 ${new Date().getMonth() + 1}월`;
 
+        // --- 휴대폰 뒤로가기 버튼(히스토리) 제어 ---
+        function showMainView() {
+            isFixedView = false;
+            document.getElementById('view-transactions').classList.remove('hidden');
+            document.getElementById('view-fixed').classList.add('hidden');
+            document.getElementById('btn-toggle-view').innerText = '고정지출 관리';
+        }
+
+        function showFixedView(push = true) {
+            isFixedView = true;
+            document.getElementById('view-transactions').classList.add('hidden');
+            document.getElementById('view-fixed').classList.remove('hidden');
+            document.getElementById('btn-toggle-view').innerText = '가계부 메인';
+            if (push) {
+                history.pushState({ view: 'fixed' }, '');
+            }
+        }
+
+        window.addEventListener('popstate', (e) => {
+            if (isFixedView) {
+                showMainView();
+                loadAllData();
+            }
+        });
+
         async function verifyAndEnter(pin) {
             const res = await fetch('/api/verify-pin', {
                 method: 'POST',
@@ -343,6 +367,7 @@ HTML_TEMPLATE = """
                 document.getElementById('pin-error').classList.add('hidden');
                 document.getElementById('pin-screen').classList.add('hidden');
                 document.getElementById('main-app').classList.remove('hidden');
+                history.replaceState({ view: 'main' }, '');
                 loadAllData();
             } else {
                 localStorage.removeItem('family_pin');
@@ -370,15 +395,10 @@ HTML_TEMPLATE = """
         });
 
         document.getElementById('btn-toggle-view').addEventListener('click', () => {
-            isFixedView = !isFixedView;
             if (isFixedView) {
-                document.getElementById('view-transactions').classList.add('hidden');
-                document.getElementById('view-fixed').classList.remove('hidden');
-                document.getElementById('btn-toggle-view').innerText = '가계부 메인';
+                history.back();
             } else {
-                document.getElementById('view-transactions').classList.remove('hidden');
-                document.getElementById('view-fixed').classList.add('hidden');
-                document.getElementById('btn-toggle-view').innerText = '고정지출 관리';
+                showFixedView(true);
             }
             loadAllData();
         });
@@ -851,7 +871,6 @@ def handle_transactions():
 
     if request.method == "GET":
         sync_fixed_expenses_for_current_month(data)
-        # 최신 날짜순 정렬
         txs = sorted(data.get("transactions", []), key=lambda x: (x.get("date", ""), x.get("id", 0)), reverse=True)
         return jsonify(txs)
 
