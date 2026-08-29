@@ -4,7 +4,6 @@ from flask import Flask, render_template_string, request, jsonify
 
 app = Flask(__name__)
 
-# Gemini API 설정
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 
 HTML_TEMPLATE = """
@@ -68,7 +67,7 @@ HTML_TEMPLATE = """
                         <option value="계좌이체">계좌이체</option>
                     </select>
                 </div>
-                <input type="text" id="tx-memo" placeholder="메모 (예: 점심 식사, 장보기)" class="w-full border p-2 rounded text-sm bg-white">
+                <input type="text" id="tx-memo" placeholder="메모" class="w-full border p-2 rounded text-sm bg-white">
                 <div class="flex gap-2">
                     <button type="submit" id="btn-submit" class="flex-1 bg-blue-600 text-white py-2 rounded text-sm font-bold shadow hover:bg-blue-700">추가하기</button>
                     <button type="button" id="btn-cancel-edit" class="hidden px-3 bg-gray-300 text-gray-700 py-2 rounded text-sm font-bold">취소</button>
@@ -120,8 +119,7 @@ HTML_TEMPLATE = """
         }
 
         function renderSummary() {
-            let income = 0;
-            let expense = 0;
+            let income = 0, expense = 0;
             transactions.forEach(t => {
                 if (t.type === 'income') income += Number(t.amount);
                 else expense += Number(t.amount);
@@ -196,9 +194,7 @@ HTML_TEMPLATE = """
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 10 } } }
-                    }
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 10 } } } }
                 }
             });
         }
@@ -324,7 +320,7 @@ def manifest():
 @app.route("/api/analyze", methods=["POST"])
 def analyze():
     if not GEMINI_API_KEY:
-        return jsonify({"analysis": "GEMINI_API_KEY가 설정되지 않았습니다. Render 환경 변수를 확인해 주세요."})
+        return jsonify({"analysis": "GEMINI_API_KEY가 설정되지 않았습니다."})
 
     data = request.get_json() or {}
     txs = data.get("transactions", [])
@@ -348,9 +344,7 @@ def analyze():
 3. 바로 실천할 수 있는 구체적인 절약 조언 (2~3개 불릿 포인트)
 """
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={GEMINI_API_KEY}"
-    payload = {
-        "contents": [{"parts": [{"text": prompt}]}]
-    }
+    payload = {"contents": [{"parts": [{"text": prompt}]}]}
 
     try:
         res = requests.post(url, json=payload, timeout=20)
