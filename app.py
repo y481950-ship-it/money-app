@@ -1,4 +1,5 @@
 import os
+import json
 import sqlite3
 import requests
 from flask import Flask, render_template_string, request, jsonify
@@ -79,9 +80,19 @@ HTML_TEMPLATE = """
             </div>
         </div>
 
+        <!-- 영수증 AI 자동인식 카메라 버튼 바 -->
+        <div class="px-4 pt-3 pb-1 bg-gray-50 flex items-center gap-2">
+            <input type="file" id="receipt-camera" accept="image/*" capture="environment" class="hidden">
+            <button type="button" id="btn-camera" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow transition">
+                <span>📷 영수증 바로 촬영 / 스캔</span>
+            </button>
+        </div>
+        <div id="ocr-loading" class="hidden px-4 text-center text-xs text-amber-700 font-semibold py-1 bg-amber-50 animate-pulse">
+            Gemini AI가 영수증을 분석하고 있습니다... ⏳
+        </div>
+
         <!-- 입력 폼 영역 -->
         <div class="p-4 border-b bg-gray-50 space-y-3">
-            <!-- 수입/지출 대형 토글 버튼 -->
             <div class="grid grid-cols-2 gap-2 bg-gray-200 p-1 rounded-lg">
                 <button type="button" id="tab-expense" class="py-2 text-sm font-bold rounded-md bg-red-500 text-white transition">지출 (-)</button>
                 <button type="button" id="tab-income" class="py-2 text-sm font-bold rounded-md text-gray-600 transition">수입 (+)</button>
@@ -90,20 +101,16 @@ HTML_TEMPLATE = """
             <form id="tx-form" class="space-y-3">
                 <input type="hidden" id="tx-id">
                 
-                <!-- 금액 입력 -->
                 <div>
                     <input type="number" id="tx-amount" placeholder="금액 입력 (원)" required class="w-full text-base border p-2.5 rounded-lg bg-white font-bold text-right">
                 </div>
 
-                <!-- 카테고리 원터치 버튼 칩 영역 -->
                 <div>
                     <label class="block text-[11px] font-bold text-gray-600 mb-1.5">카테고리 선택</label>
                     <div id="category-chips" class="flex flex-wrap gap-1.5"></div>
-                    <!-- 직접 입력 칸 -->
                     <input type="text" id="tx-custom-category" placeholder="원하는 카테고리 직접 입력 가능" class="w-full mt-2 border p-2 rounded text-xs bg-white">
                 </div>
 
-                <!-- 날짜 및 결제수단 -->
                 <div class="grid grid-cols-2 gap-2">
                     <div>
                         <label class="block text-[11px] text-gray-500 mb-0.5">날짜</label>
@@ -119,7 +126,6 @@ HTML_TEMPLATE = """
                     </div>
                 </div>
 
-                <!-- 메모 -->
                 <input type="text" id="tx-memo" placeholder="메모 (예: 외식, 마트 장보기)" class="w-full border p-2 rounded text-xs bg-white">
 
                 <div class="flex gap-2 pt-1">
@@ -131,7 +137,6 @@ HTML_TEMPLATE = """
 
         <!-- 내용 출력 영역 -->
         <div class="p-4 flex-1 space-y-5">
-            <!-- 도넛 차트 -->
             <div class="bg-white p-3 rounded-lg border shadow-sm">
                 <h2 class="font-bold text-xs text-gray-600 mb-2">📊 지출 요약</h2>
                 <div class="w-full h-44 flex justify-center items-center">
@@ -139,7 +144,6 @@ HTML_TEMPLATE = """
                 </div>
             </div>
 
-            <!-- Gemini AI 코칭 -->
             <div class="bg-gradient-to-r from-emerald-50 to-teal-50 p-3.5 rounded-lg border border-emerald-200 shadow-sm">
                 <div class="flex justify-between items-center mb-2">
                     <span class="font-bold text-xs text-emerald-800">🤖 부부 재정 AI 코칭</span>
@@ -151,7 +155,6 @@ HTML_TEMPLATE = """
                 <div id="ai-result" class="hidden mt-2.5 p-3 bg-white border border-emerald-200 rounded text-xs leading-relaxed text-gray-700 whitespace-pre-line"></div>
             </div>
 
-            <!-- 목록 -->
             <div>
                 <div class="flex justify-between items-center mb-2">
                     <h2 class="font-bold text-xs text-gray-600">📝 내역 목록 (<span id="tx-count">0</span>건)</h2>
@@ -250,6 +253,56 @@ HTML_TEMPLATE = """
                 });
                 btn.className = 'pay-chip flex-1 py-1.5 text-xs font-semibold rounded border border-blue-600 bg-blue-600 text-white';
             });
+        });
+
+        // 영수증 카메라 촬영 핸들러
+        document.getElementById('btn-camera').addEventListener('click', () => {
+            document.getElementById('receipt-camera').click();
+        });
+
+        document.getElementById('receipt-camera').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const loadingEl = document.getElementById('ocr-loading');
+            loadingEl.classList.remove('hidden');
+
+            const reader = new FileReader();
+            reader.onload = async () => {
+                const base64Data = reader.result.split(',')[1];
+                const mimeType = file.type || 'image/jpeg';
+
+                try {
+                    const res = await fetch('/api/receipt-ocr', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ image: base64Data, mimeType: mimeType })
+                    });
+                    const data = await res.json();
+                    loadingEl.classList.add('hidden');
+
+                    if (data.amount) document.getElementById('tx-amount').value = data.amount;
+                    if (data.date) document.getElementById('tx-date').value = data.date;
+                    if (data.memo) document.getElementById('tx-memo').value = data.memo;
+
+                    document.getElementById('tab-expense').click();
+
+                    if (data.category && expenseCategories.includes(data.category)) {
+                        currentCategory = data.category;
+                        document.getElementById('tx-custom-category').value = '';
+                    } else if (data.category) {
+                        currentCategory = '기타';
+                        document.getElementById('tx-custom-category').value = data.category;
+                    }
+                    renderCategoryChips();
+                    alert('영수증 인식이 완료되었습니다. 내용을 확인 후 [추가하기]를 눌러주세요.');
+                } catch (err) {
+                    loadingEl.classList.add('hidden');
+                    alert('영수증 인식 실패: ' + err.message);
+                }
+            };
+            reader.readAsDataURL(file);
+            e.target.value = '';
         });
 
         async function fetchTransactions() {
@@ -550,6 +603,57 @@ def modify_transaction(tx_id):
         conn.close()
         return jsonify({"status": "deleted"})
 
+@app.route("/api/receipt-ocr", methods=["POST"])
+def receipt_ocr():
+    if not GEMINI_API_KEY:
+        return jsonify({"error": "GEMINI_API_KEY가 없습니다."}), 500
+
+    data = request.get_json() or {}
+    image_base64 = data.get("image")
+    mime_type = data.get("mimeType", "image/jpeg")
+
+    if not image_base64:
+        return jsonify({"error": "이미지 데이터가 없습니다."}), 400
+
+    prompt = """
+이 영수증 사진을 분석하여 아래 JSON 형식으로만 응답해 주세요. Markdown 코드 블록(```json 등) 없이 순수 JSON 텍스트만 반환하세요:
+{
+  "amount": 총 결제금액(숫자만, 예: 15000),
+  "date": "결제일자(YYYY-MM-DD 형식, 확인 불가 시 오늘 날짜)",
+  "memo": "상호명 또는 주요 품목(예: 스타벅스, 이마트)",
+  "category": "식비" | "주유/교통" | "마트/쇼핑" | "생활/문화" | "주거/통신" | "기타" 중 하나
+}
+"""
+    url = f"[https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=](https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=){GEMINI_API_KEY}"
+    payload = {
+        "contents": [
+            {
+                "parts": [
+                    {"text": prompt},
+                    {
+                        "inline_data": {
+                            "mime_type": mime_type,
+                            "data": image_base64
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+
+    try:
+        res = requests.post(url, json=payload, timeout=25)
+        res_json = res.json()
+        raw_text = res_json["candidates"][0]["content"]["parts"][0]["text"].strip()
+        if raw_text.startswith("```"):
+            raw_text = raw_text.split("```")[1]
+            if raw_text.startswith("json"):
+                raw_text = raw_text[4:].strip()
+        parsed = json.loads(raw_text)
+        return jsonify(parsed)
+    except Exception as e:
+        return jsonify({"error": f"OCR 처리 실패: {str(e)}"}), 500
+
 @app.route("/api/analyze", methods=["POST"])
 def analyze():
     if not GEMINI_API_KEY:
@@ -576,7 +680,7 @@ def analyze():
 2. 주요 지출 항목 분석
 3. 부부를 위한 실천적 절약 팁 2~3가지
 """
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={GEMINI_API_KEY}"
+    url = f"[https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=](https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=){GEMINI_API_KEY}"
     payload = {"contents": [{"parts": [{"text": prompt}]}]}
 
     try:
