@@ -20,6 +20,15 @@
       "category": "주거/통신",
       "payment": "계좌이체",
       "memo": "카카오뱅크"
+    },
+    {
+      "id": 2,
+      "name": "자동차",
+      "amount": 482307,
+      "due_day": 13,
+      "category": "기타",
+      "payment": "카드",
+      "memo": "하나카드"
     }
   ]
 }
