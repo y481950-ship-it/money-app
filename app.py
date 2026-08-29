@@ -166,9 +166,10 @@ HTML_TEMPLATE = """
         <!-- [메인 탭: 일반 가계부 뷰] -->
         <div id="view-transactions" class="flex-1 flex flex-col">
             <div class="px-4 pt-3 pb-1 bg-gray-50 flex items-center gap-2">
-                <input type="file" id="receipt-camera" accept="image/*" capture="environment" class="hidden">
+                <!-- capture 속성을 제거하여 카메라 촬영 및 갤러리 불러오기 모두 지원 -->
+                <input type="file" id="receipt-camera" accept="image/*" class="hidden">
                 <button type="button" id="btn-camera" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow transition">
-                    <span>📷 영수증 바로 촬영 / 스캔</span>
+                    <span>📷 영수증 촬영 / 이미지 선택</span>
                 </button>
             </div>
             <div id="ocr-loading" class="hidden px-4 text-center text-xs text-amber-700 font-semibold py-1 bg-amber-50 animate-pulse">
@@ -329,7 +330,6 @@ HTML_TEMPLATE = """
         document.getElementById('tx-date').value = new Date().toISOString().slice(0, 10);
         document.getElementById('current-month').innerText = `${new Date().getFullYear()}년 ${new Date().getMonth() + 1}월`;
 
-        // --- 휴대폰 뒤로가기 버튼(히스토리) 제어 ---
         function showMainView() {
             isFixedView = false;
             document.getElementById('view-transactions').classList.remove('hidden');
