@@ -1,12 +1,11 @@
 import os
+import requests
 from flask import Flask, render_template_string, request, jsonify
-from google import genai
 
 app = Flask(__name__)
 
-# Gemini API 설정 (GEMINI_API_KEY 환경 변수 연동)
+# Gemini API 설정
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -22,13 +21,11 @@ HTML_TEMPLATE = """
 </head>
 <body class="bg-gray-100 text-gray-800 pb-20">
     <div class="max-w-md mx-auto min-h-screen bg-white shadow-md flex flex-col">
-        <!-- 상단 헤더 -->
         <header class="bg-blue-600 text-white p-4 sticky top-0 z-10 flex justify-between items-center shadow">
             <h1 class="text-lg font-bold">💳 스마트 가계부</h1>
             <span id="current-month" class="text-xs bg-blue-700 px-2 py-1 rounded"></span>
         </header>
 
-        <!-- 요약 카드 -->
         <div class="p-4 grid grid-cols-3 gap-2 bg-blue-50 border-b">
             <div class="bg-white p-2.5 rounded-lg shadow-sm text-center">
                 <span class="text-[11px] text-gray-500 font-medium">총수입</span>
@@ -44,7 +41,6 @@ HTML_TEMPLATE = """
             </div>
         </div>
 
-        <!-- 입력/수정 폼 -->
         <div class="p-4 border-b bg-gray-50">
             <form id="tx-form" class="space-y-2.5">
                 <input type="hidden" id="tx-id">
@@ -72,7 +68,7 @@ HTML_TEMPLATE = """
                         <option value="계좌이체">계좌이체</option>
                     </select>
                 </div>
-                <input type="text" id="tx-memo" placeholder="메모 (예: 점심 식사, 마트 장보기)" class="w-full border p-2 rounded text-sm bg-white">
+                <input type="text" id="tx-memo" placeholder="메모 (예: 점심 식사, 장보기)" class="w-full border p-2 rounded text-sm bg-white">
                 <div class="flex gap-2">
                     <button type="submit" id="btn-submit" class="flex-1 bg-blue-600 text-white py-2 rounded text-sm font-bold shadow hover:bg-blue-700">추가하기</button>
                     <button type="button" id="btn-cancel-edit" class="hidden px-3 bg-gray-300 text-gray-700 py-2 rounded text-sm font-bold">취소</button>
@@ -80,9 +76,7 @@ HTML_TEMPLATE = """
             </form>
         </div>
 
-        <!-- 본문 영역 -->
         <div class="p-4 flex-1 space-y-5">
-            <!-- 지출 통계 차트 -->
             <div class="bg-white p-3 rounded-lg border shadow-sm">
                 <h2 class="font-bold text-xs text-gray-600 mb-2">📊 카테고리별 지출 요약</h2>
                 <div class="w-full h-44 flex justify-center items-center">
@@ -90,7 +84,6 @@ HTML_TEMPLATE = """
                 </div>
             </div>
 
-            <!-- AI 분석 -->
             <div class="bg-gradient-to-r from-emerald-50 to-teal-50 p-3.5 rounded-lg border border-emerald-200 shadow-sm">
                 <div class="flex justify-between items-center mb-2">
                     <span class="font-bold text-xs text-emerald-800">🤖 Gemini AI 소비 코칭</span>
@@ -102,7 +95,6 @@ HTML_TEMPLATE = """
                 <div id="ai-result" class="hidden mt-2.5 p-3 bg-white border border-emerald-200 rounded text-xs leading-relaxed text-gray-700 whitespace-pre-line"></div>
             </div>
 
-            <!-- 내역 목록 -->
             <div>
                 <div class="flex justify-between items-center mb-2">
                     <h2 class="font-bold text-xs text-gray-600">📝 상세 내역 (<span id="tx-count">0</span>건)</h2>
@@ -331,7 +323,7 @@ def manifest():
 
 @app.route("/api/analyze", methods=["POST"])
 def analyze():
-    if not client:
+    if not GEMINI_API_KEY:
         return jsonify({"analysis": "GEMINI_API_KEY가 설정되지 않았습니다. Render 환경 변수를 확인해 주세요."})
 
     data = request.get_json() or {}
@@ -355,12 +347,16 @@ def analyze():
 2. 소비 패턴 진단 및 낭비 요인 짚기
 3. 바로 실천할 수 있는 구체적인 절약 조언 (2~3개 불릿 포인트)
 """
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={GEMINI_API_KEY}"
+    payload = {
+        "contents": [{"parts": [{"text": prompt}]}]
+    }
+
     try:
-        response = client.models.generate_content(
-            model="gemini-3.6-flash",
-            contents=prompt
-        )
-        return jsonify({"analysis": response.text})
+        res = requests.post(url, json=payload, timeout=20)
+        res_json = res.json()
+        text = res_json["candidates"][0]["content"]["parts"][0]["text"]
+        return jsonify({"analysis": text})
     except Exception as e:
         return jsonify({"analysis": f"AI 분석 오류 ({str(e)})"}), 500
 
