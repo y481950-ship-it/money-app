@@ -119,6 +119,16 @@
       "payment": "계좌이체",
       "memo": "[고정지출] 정수기 (농협)",
       "is_fixed": 1
+    },
+    {
+      "id": 13,
+      "type": "expense",
+      "amount": 237210,
+      "date": "2026-08-01",
+      "category": "보험/세금",
+      "payment": "계좌이체",
+      "memo": "[고정지출] 보험료 (농협)",
+      "is_fixed": 1
     }
   ],
   "fixed_expenses": [
