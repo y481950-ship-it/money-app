@@ -39,6 +39,16 @@
       "payment": "계좌이체",
       "memo": "[고정지출] 산악회 (기업은행)",
       "is_fixed": 1
+    },
+    {
+      "id": 5,
+      "type": "expense",
+      "amount": 300000,
+      "date": "2026-08-10",
+      "category": "생활/문화",
+      "payment": "계좌이체",
+      "memo": "[고정지출] 용돈 (기업은행)",
+      "is_fixed": 1
     }
   ],
   "fixed_expenses": [
