@@ -115,6 +115,15 @@
       "category": "보험/세금",
       "payment": "계좌이체",
       "memo": "기업은행"
+    },
+    {
+      "id": 7,
+      "name": "자동차운전자보험",
+      "amount": 16606,
+      "due_day": 13,
+      "category": "보험/세금",
+      "payment": "계좌이체",
+      "memo": "기업은행"
     }
   ]
 }
