@@ -39,6 +39,15 @@
       "category": "기타",
       "payment": "카드",
       "memo": "하나카드"
+    },
+    {
+      "id": 3,
+      "name": "세광임대료",
+      "amount": 65000,
+      "due_day": 10,
+      "category": "주거/통신",
+      "payment": "계좌이체",
+      "memo": "기업은행"
     }
   ]
 }
