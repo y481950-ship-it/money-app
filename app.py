@@ -88,7 +88,7 @@ def sync_fixed_expenses_for_current_month(data):
 
         unique_memo = f"[고정지출] {item.get('name')}" + (f" ({item.get('memo')})" if item.get("memo") else "")
         exists = any(t.get("is_fixed") == 1 and t.get("memo") == unique_memo and t.get("date") == target_date for t in txs)
-        
+
         if not exists:
             new_id = max([t.get("id", 0) for t in txs], default=0) + 1
             txs.append({
@@ -182,7 +182,7 @@ HTML_TEMPLATE = """
 
                 <form id="tx-form" class="space-y-3">
                     <input type="hidden" id="tx-id">
-                    
+
                     <div>
                         <input type="number" id="tx-amount" placeholder="금액 입력 (원)" required class="w-full text-base border p-2.5 rounded-lg bg-white font-bold text-right">
                     </div>
@@ -255,7 +255,7 @@ HTML_TEMPLATE = """
             <form id="fixed-form" class="bg-white p-3.5 border rounded-lg shadow-sm space-y-3">
                 <input type="hidden" id="fixed-id">
                 <h3 class="font-bold text-xs text-gray-700 border-b pb-1">고정지출 항목 등록 / 수정</h3>
-                
+
                 <div class="grid grid-cols-2 gap-2">
                     <input type="text" id="fixed-name" placeholder="항목명 (예: 관리비, 대출)" required class="border p-2 rounded text-xs bg-gray-50">
                     <input type="number" id="fixed-amount" placeholder="금액 (원)" required class="border p-2 rounded text-xs bg-gray-50 font-bold">
@@ -372,7 +372,7 @@ HTML_TEMPLATE = """
                     document.getElementById('main-app').classList.add('hidden');
                 }
             } catch (e) {
-                alert('서버 연결 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
+                alert('서버 연결 중 오류가 발생했습니다.');
             }
         }
 
@@ -406,7 +406,7 @@ HTML_TEMPLATE = """
             const container = document.getElementById('category-chips');
             container.innerHTML = '';
             const list = currentType === 'expense' ? expenseCategories : incomeCategories;
-            
+
             if (!list.includes(currentCategory)) {
                 currentCategory = list[0];
             }
@@ -538,7 +538,7 @@ HTML_TEMPLATE = """
             document.getElementById('total-income').innerText = income.toLocaleString() + '원';
             document.getElementById('total-fixed').innerText = fixedSum.toLocaleString() + '원';
             document.getElementById('total-variable').innerText = variableSum.toLocaleString() + '원';
-            
+
             const bal = income - (fixedSum + variableSum);
             const balEl = document.getElementById('balance');
             balEl.innerText = bal.toLocaleString() + '원';
@@ -796,11 +796,11 @@ HTML_TEMPLATE = """
 
         document.getElementById('btn-export-csv').addEventListener('click', () => {
             if (!transactions.length) return alert('저장할 내역이 없습니다.');
-            let csv = "날짜,구분,카테고리,금액,결제수단,메모,고정여부\n";
+            let csv = "날짜,구분,카테고리,금액,결제수단,메모,고정여부\\n";
             transactions.forEach(t => {
-                csv += `"${t.date}","${t.type === 'expense' ? '지출' : '수입'}","${t.category}",${t.amount},"${t.payment}","${t.memo || ''}","${t.is_fixed ? '고정지출' : '일반'}"\n`;
+                csv += `"${t.date}","${t.type === 'expense' ? '지출' : '수입'}","${t.category}",${t.amount},"${t.payment}","${t.memo || ''}","${t.is_fixed ? '고정지출' : '일반'}"\\n`;
             });
-            const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+            const blob = new Blob(["\\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('link');
             link.href = URL.createObjectURL(blob);
             link.download = `부부가계부_${new Date().toISOString().slice(0,10)}.csv`;
