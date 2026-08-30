@@ -96,6 +96,15 @@
       "category": "생활/문화",
       "payment": "계좌이체",
       "memo": "기업은행"
+    },
+    {
+      "id": 6,
+      "name": "보험료",
+      "amount": 277908,
+      "due_day": 13,
+      "category": "보험/세금",
+      "payment": "계좌이체",
+      "memo": "기업은행"
     }
   ]
 }
