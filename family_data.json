@@ -139,6 +139,16 @@
       "payment": "계좌이체",
       "memo": "[고정지출] 휴대폰 (4인가족)",
       "is_fixed": 1
+    },
+    {
+      "id": 15,
+      "type": "expense",
+      "amount": 30000,
+      "date": "2026-08-05",
+      "category": "보험/세금",
+      "payment": "계좌이체",
+      "memo": "[고정지출] 화재보험 (농협)",
+      "is_fixed": 1
     }
   ],
   "fixed_expenses": [
