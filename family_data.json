@@ -153,6 +153,15 @@
       "category": "보험/세금",
       "payment": "계좌이체",
       "memo": "기업은행"
+    },
+    {
+      "id": 9,
+      "name": "핸드폰.티비.인터넷",
+      "amount": 201000,
+      "due_day": 15,
+      "category": "주거/통신",
+      "payment": "카드",
+      "memo": "기업카드"
     }
   ]
 }
