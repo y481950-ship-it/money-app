@@ -134,6 +134,15 @@
       "category": "보험/세금",
       "payment": "계좌이체",
       "memo": "기업은행"
+    },
+    {
+      "id": 8,
+      "name": "오토바이운전자보험",
+      "amount": 27165,
+      "due_day": 13,
+      "category": "보험/세금",
+      "payment": "계좌이체",
+      "memo": "기업은행"
     }
   ]
 }
