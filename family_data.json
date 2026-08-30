@@ -77,6 +77,15 @@
       "category": "생활/문화",
       "payment": "계좌이체",
       "memo": "기업은행"
+    },
+    {
+      "id": 5,
+      "name": "용돈",
+      "amount": 300000,
+      "due_day": 10,
+      "category": "생활/문화",
+      "payment": "계좌이체",
+      "memo": "기업은행"
     }
   ]
 }
