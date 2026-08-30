@@ -19,6 +19,16 @@
       "payment": "카드",
       "memo": "[고정지출] 자동차 (하나카드)",
       "is_fixed": 1
+    },
+    {
+      "id": 3,
+      "type": "expense",
+      "amount": 65000,
+      "date": "2026-08-10",
+      "category": "주거/통신",
+      "payment": "계좌이체",
+      "memo": "[고정지출] 세광임대료 (기업은행)",
+      "is_fixed": 1
     }
   ],
   "fixed_expenses": [
