@@ -201,6 +201,15 @@
       "category": "기타",
       "payment": "계좌이체",
       "memo": "기업은행"
+    },
+    {
+      "id": 11,
+      "name": "정수기",
+      "amount": 35910,
+      "due_day": 27,
+      "category": "기타",
+      "payment": "계좌이체",
+      "memo": "농협"
     }
   ]
 }
