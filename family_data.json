@@ -268,6 +268,15 @@
       "category": "보험/세금",
       "payment": "계좌이체",
       "memo": "농협"
+    },
+    {
+      "id": 15,
+      "name": "올란도 차보험(12개월)",
+      "amount": 65120,
+      "due_day": 1,
+      "category": "보험/세금",
+      "payment": "계좌이체",
+      "memo": "기업은행"
     }
   ]
 }
