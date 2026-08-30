@@ -220,6 +220,15 @@
       "category": "기타",
       "payment": "계좌이체",
       "memo": "농협"
+    },
+    {
+      "id": 12,
+      "name": "보험료",
+      "amount": 237210,
+      "due_day": 1,
+      "category": "보험/세금",
+      "payment": "계좌이체",
+      "memo": "농협"
     }
   ]
 }
