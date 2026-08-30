@@ -166,7 +166,6 @@ HTML_TEMPLATE = """
         <!-- [메인 탭: 일반 가계부 뷰] -->
         <div id="view-transactions" class="flex-1 flex flex-col">
             <div class="px-4 pt-3 pb-1 bg-gray-50 flex items-center gap-2">
-                <!-- 안드로이드 갤러리 앱 우선 연동을 위해 세부 MIME 타입 명시 -->
                 <input type="file" id="receipt-camera" accept="image/jpeg,image/png,image/jpg,image/webp,image/*" class="hidden">
                 <button type="button" id="btn-camera" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow transition">
                     <span>📷 영수증 촬영 / 갤러리 선택</span>
@@ -797,11 +796,11 @@ HTML_TEMPLATE = """
 
         document.getElementById('btn-export-csv').addEventListener('click', () => {
             if (!transactions.length) return alert('저장할 내역이 없습니다.');
-            let csv = "날짜,구분,카테고리,금액,결제수단,메모,고정여부\\n";
+            let csv = "날짜,구분,카테고리,금액,결제수단,메모,고정여부\n";
             transactions.forEach(t => {
-                csv += `"${t.date}","${t.type === 'expense' ? '지출' : '수입'}","${t.category}",${t.amount},"${t.payment}","${t.memo || ''}","${t.is_fixed ? '고정지출' : '일반'}"\\n`;
+                csv += `"${t.date}","${t.type === 'expense' ? '지출' : '수입'}","${t.category}",${t.amount},"${t.payment}","${t.memo || ''}","${t.is_fixed ? '고정지출' : '일반'}"\n`;
             });
-            const blob = new Blob(["\\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+            const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('link');
             link.href = URL.createObjectURL(blob);
             link.download = `부부가계부_${new Date().toISOString().slice(0,10)}.csv`;
@@ -1007,7 +1006,7 @@ def receipt_ocr():
   "category": "식비" | "주유/교통" | "마트/쇼핑" | "생활/문화" | "주거/통신" | "금융/대출" | "기타" 중 하나
 }
 """
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={GEMINI_API_KEY}"
+    url = f"[https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=](https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=){GEMINI_API_KEY}"
     payload = {
         "contents": [
             {
@@ -1066,7 +1065,7 @@ def analyze():
 2. 주요 지출 항목 분석 및 낭비 요인
 3. 부부를 위한 실천적 절약 조언 2~3가지
 """
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={GEMINI_API_KEY}"
+    url = f"[https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=](https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=){GEMINI_API_KEY}"
     payload = {"contents": [{"parts": [{"text": prompt}]}]}
 
     try:
