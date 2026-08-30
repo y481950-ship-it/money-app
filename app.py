@@ -1045,24 +1045,44 @@ def analyze():
     if not GEMINI_API_KEY:
         return jsonify({"analysis": "GEMINI_API_KEY가 등록되지 않았습니다."})
 
-    txs = data.get("transactions", [])
-    if not txs:
-        return jsonify({"analysis": "분석할 데이터가 없습니다."})
+    today = datetime.date.today()
+    current_month_prefix = today.strftime("%Y-%m")
 
+    full_data, _ = get_remote_data()
+    all_txs = full_data.get("transactions", [])
+    fixed_list = full_data.get("fixed_expenses", [])
+
+    # 이번 달 일반 거래 내역만 필터링
+    current_txs = [t for t in all_txs if str(t.get("date", "")).startswith(current_month_prefix)]
+    
+    # 파이썬이 직접 정확하게 계산
+    total_income = sum(int(t.get("amount", 0)) for t in current_txs if t.get("type") == "income")
+    total_fixed = sum(int(f.get("amount", 0)) for f in fixed_list)
+    total_variable = sum(int(t.get("amount", 0)) for t in current_txs if t.get("type") == "expense" and t.get("is_fixed") == 0)
+    balance = total_income - (total_fixed + total_variable)
+
+    # 상세 내역 정리
     summary_lines = [
         f"[{t['date']}] {t['type']}: {t['category']} {t['amount']}원 ({t.get('payment','')}) / 메모: {t.get('memo','')}"
-        for t in txs
+        for t in current_txs if t.get("is_fixed") == 0
     ]
+
     prompt = f"""
 당신은 부부 재정 관리 전문 코치입니다.
-부부의 가계부 수입/고정지출/변동지출 내역을 보고 핵심만 직관적으로 피드백해 주세요:
+아래 제공된 [정확한 이번 달 집계 수치]를 100% 사실로 채택하여 피드백을 작성하세요.
 
-[거래 내역]
-{chr(10).join(summary_lines)}
+[이번 달({current_month_prefix}) 실제 재정 집계]
+- 총수입: {total_income:,}원
+- 고정지출: {total_fixed:,}원
+- 변동지출: {total_variable:,}원
+- 남은잔액: {balance:,}원
 
-[답변 형식]
-1. 이번 달 재정 요약 (총수입 대비 고정비/변동비 흐름)
-2. 주요 지출 항목 분석 및 낭비 요인
+[변동지출 상세 거래 내역]
+{chr(10).join(summary_lines) if summary_lines else "등록된 일반 변동지출 내역 없음"}
+
+[답변 작성 규칙]
+1. 이번 달 재정 요약 (위 집계 수치를 그대로 인용)
+2. 고정지출 비중 및 재정 건전성 평가
 3. 부부를 위한 실천적 절약 조언 2~3가지
 """
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={GEMINI_API_KEY}"
@@ -1075,6 +1095,6 @@ def analyze():
         return jsonify({"analysis": text})
     except Exception as e:
         return jsonify({"analysis": f"AI 분석 실패 ({str(e)})"}), 500
-
+        
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
