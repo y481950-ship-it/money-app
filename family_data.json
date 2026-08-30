@@ -89,6 +89,16 @@
       "payment": "카드",
       "memo": "[고정지출] 핸드폰.티비.인터넷 (기업카드)",
       "is_fixed": 1
+    },
+    {
+      "id": 10,
+      "type": "expense",
+      "amount": 1000000,
+      "date": "2026-08-10",
+      "category": "기타",
+      "payment": "계좌이체",
+      "memo": "[고정지출] 자동이체 (기업은행)",
+      "is_fixed": 1
     }
   ],
   "fixed_expenses": [
