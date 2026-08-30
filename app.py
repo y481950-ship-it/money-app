@@ -1024,7 +1024,7 @@ def receipt_ocr():
     }
 
     try:
-        res = requests.post(url, json=payload, timeout=25)
+        res = requests.post(url, json=payload, timeout=60)
         res_json = res.json()
         raw_text = res_json["candidates"][0]["content"]["parts"][0]["text"].strip()
         if raw_text.startswith("```"):
