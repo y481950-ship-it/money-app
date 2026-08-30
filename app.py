@@ -1066,7 +1066,7 @@ def analyze():
 2. 주요 지출 항목 분석 및 낭비 요인
 3. 부부를 위한 실천적 절약 조언 2~3가지
 """
-   url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={GEMINI_API_KEY}"
     payload = {"contents": [{"parts": [{"text": prompt}]}]}
 
     try:
