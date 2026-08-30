@@ -258,6 +258,15 @@
       "category": "주거/통신",
       "payment": "계좌이체",
       "memo": "4인가족"
+    },
+    {
+      "id": 14,
+      "name": "화재보험",
+      "amount": 30000,
+      "due_day": 5,
+      "category": "보험/세금",
+      "payment": "계좌이체",
+      "memo": "농협"
     }
   ]
 }
