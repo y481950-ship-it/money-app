@@ -117,8 +117,8 @@
       "amount": 482307,
       "due_day": 13,
       "category": "기타",
-      "payment": "카드",
-      "memo": "하나카드"
+      "payment": "계좌이체",
+      "memo": "기업은행"
     },
     {
       "id": 3,
