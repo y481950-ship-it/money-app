@@ -59,6 +59,16 @@
       "payment": "계좌이체",
       "memo": "[고정지출] 보험료 (기업은행)",
       "is_fixed": 1
+    },
+    {
+      "id": 7,
+      "type": "expense",
+      "amount": 16606,
+      "date": "2026-08-13",
+      "category": "보험/세금",
+      "payment": "계좌이체",
+      "memo": "[고정지출] 자동차운전자보험 (기업은행)",
+      "is_fixed": 1
     }
   ],
   "fixed_expenses": [
