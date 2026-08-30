@@ -1069,7 +1069,7 @@ def analyze():
     payload = {"contents": [{"parts": [{"text": prompt}]}]}
 
     try:
-        res = requests.post(url, json=payload, timeout=20)
+        res = requests.post(url, json=payload, timeout=60)
         res_json = res.json()
         text = res_json["candidates"][0]["content"]["parts"][0]["text"]
         return jsonify({"analysis": text})
