@@ -20,7 +20,7 @@ def get_remote_data():
             try:
                 with open(DATA_FILE, "r", encoding="utf-8") as f:
                     return json.load(f), None
-            except:
+            except Exception:
                 return default_data, None
         return default_data, None
 
@@ -30,20 +30,23 @@ def get_remote_data():
         "Accept": "application/vnd.github.v3+json"
     }
     try:
-        res = requests.get(url, headers=headers)
+        res = requests.get(url, headers=headers, timeout=10)
         if res.status_code == 200:
             file_info = res.json()
             content = base64.b64decode(file_info["content"]).decode("utf-8")
-            return json.loads(content), file_info["sha"]
-    except:
+            return json.loads(content), file_info.get("sha")
+    except Exception:
         pass
     return default_data, None
 
 def save_remote_data(data):
     if not GITHUB_TOKEN or not GITHUB_REPO:
-        with open(DATA_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-        return True
+        try:
+            with open(DATA_FILE, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            return True
+        except Exception:
+            return False
 
     _, sha = get_remote_data()
     url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{DATA_FILE}"
@@ -62,9 +65,9 @@ def save_remote_data(data):
         payload["sha"] = sha
 
     try:
-        res = requests.put(url, headers=headers, json=payload)
+        res = requests.put(url, headers=headers, json=payload, timeout=10)
         return res.status_code in [200, 201]
-    except:
+    except Exception:
         return False
 
 def sync_fixed_expenses_for_current_month(data):
@@ -118,7 +121,6 @@ HTML_TEMPLATE = """
 </head>
 <body class="bg-gray-100 text-gray-800 pb-20">
 
-    <!-- 1. PIN 잠금 화면 -->
     <div id="pin-screen" class="fixed inset-0 bg-white z-50 flex flex-col justify-center items-center p-6">
         <div class="w-full max-w-xs text-center space-y-4">
             <div class="text-4xl">🔒</div>
@@ -130,7 +132,6 @@ HTML_TEMPLATE = """
         </div>
     </div>
 
-    <!-- 2. 본 화면 -->
     <div id="main-app" class="hidden max-w-md mx-auto min-h-screen bg-white shadow-md flex flex-col">
         <header class="bg-blue-600 text-white p-4 sticky top-0 z-10 flex justify-between items-center shadow">
             <div>
@@ -143,7 +144,6 @@ HTML_TEMPLATE = """
             </div>
         </header>
 
-        <!-- 상단 4분할 상세 요약 카드 -->
         <div class="p-3 grid grid-cols-4 gap-1.5 bg-blue-50 border-b">
             <div class="bg-white p-2 rounded shadow-sm text-center">
                 <span class="text-[10px] text-gray-500 font-medium">총수입</span>
@@ -163,7 +163,6 @@ HTML_TEMPLATE = """
             </div>
         </div>
 
-        <!-- [메인 탭: 일반 가계부 뷰] -->
         <div id="view-transactions" class="flex-1 flex flex-col">
             <div class="px-4 pt-3 pb-1 bg-gray-50 flex items-center gap-2">
                 <input type="file" id="receipt-camera" accept="image/jpeg,image/png,image/jpg,image/webp,image/*" class="hidden">
@@ -175,7 +174,6 @@ HTML_TEMPLATE = """
                 Gemini AI가 영수증을 분석하고 있습니다... ⏳
             </div>
 
-            <!-- 거래 입력 폼 -->
             <div class="p-4 border-b bg-gray-50 space-y-3">
                 <div class="grid grid-cols-2 gap-2 bg-gray-200 p-1 rounded-lg">
                     <button type="button" id="tab-expense" class="py-2 text-sm font-bold rounded-md bg-red-500 text-white transition">지출 (-)</button>
@@ -219,7 +217,6 @@ HTML_TEMPLATE = """
                 </form>
             </div>
 
-            <!-- 대시보드 및 목록 -->
             <div class="p-4 flex-1 space-y-5">
                 <div class="bg-white p-3 rounded-lg border shadow-sm">
                     <h2 class="font-bold text-xs text-gray-600 mb-2">📊 지출 요약 차트</h2>
@@ -249,7 +246,6 @@ HTML_TEMPLATE = """
             </div>
         </div>
 
-        <!-- [서브 탭: 고정지출 상세 관리 뷰] -->
         <div id="view-fixed" class="hidden flex-1 p-4 space-y-4">
             <div class="bg-orange-50 border border-orange-200 p-3 rounded-lg text-xs text-orange-800">
                 📌 <strong>고정지출 관리</strong><br>
@@ -354,25 +350,29 @@ HTML_TEMPLATE = """
         });
 
         async function verifyAndEnter(pin) {
-            const res = await fetch('/api/verify-pin', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ pin: pin })
-            });
-            const data = await res.json();
-            if (data.valid) {
-                currentPin = pin;
-                localStorage.setItem('family_pin', pin);
-                document.getElementById('pin-error').classList.add('hidden');
-                document.getElementById('pin-screen').classList.add('hidden');
-                document.getElementById('main-app').classList.remove('hidden');
-                history.replaceState({ view: 'main' }, '');
-                loadAllData();
-            } else {
-                localStorage.removeItem('family_pin');
-                document.getElementById('pin-error').classList.remove('hidden');
-                document.getElementById('pin-screen').classList.remove('hidden');
-                document.getElementById('main-app').classList.add('hidden');
+            try {
+                const res = await fetch('/api/verify-pin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pin: pin })
+                });
+                const data = await res.json();
+                if (data.valid) {
+                    currentPin = pin;
+                    localStorage.setItem('family_pin', pin);
+                    document.getElementById('pin-error').classList.add('hidden');
+                    document.getElementById('pin-screen').classList.add('hidden');
+                    document.getElementById('main-app').classList.remove('hidden');
+                    history.replaceState({ view: 'main' }, '');
+                    await loadAllData();
+                } else {
+                    localStorage.removeItem('family_pin');
+                    document.getElementById('pin-error').classList.remove('hidden');
+                    document.getElementById('pin-screen').classList.remove('hidden');
+                    document.getElementById('main-app').classList.add('hidden');
+                }
+            } catch (e) {
+                alert('서버 연결 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
             }
         }
 
