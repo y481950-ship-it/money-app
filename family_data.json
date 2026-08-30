@@ -58,6 +58,15 @@
       "category": "주거/통신",
       "payment": "계좌이체",
       "memo": "기업은행"
+    },
+    {
+      "id": 4,
+      "name": "산악회",
+      "amount": 10000,
+      "due_day": 10,
+      "category": "생활/문화",
+      "payment": "계좌이체",
+      "memo": "기업은행"
     }
   ]
 }
