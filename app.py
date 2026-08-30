@@ -1007,7 +1007,7 @@ def receipt_ocr():
   "category": "식비" | "주유/교통" | "마트/쇼핑" | "생활/문화" | "주거/통신" | "금융/대출" | "기타" 중 하나
 }
 """
-    url = f"[https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=](https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=){GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={GEMINI_API_KEY}"
     payload = {
         "contents": [
             {
@@ -1066,7 +1066,7 @@ def analyze():
 2. 주요 지출 항목 분석 및 낭비 요인
 3. 부부를 위한 실천적 절약 조언 2~3가지
 """
-    url = f"[https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=](https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=){GEMINI_API_KEY}"
+   url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={GEMINI_API_KEY}"
     payload = {"contents": [{"parts": [{"text": prompt}]}]}
 
     try:
