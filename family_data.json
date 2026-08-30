@@ -99,6 +99,16 @@
       "payment": "계좌이체",
       "memo": "[고정지출] 자동이체 (기업은행)",
       "is_fixed": 1
+    },
+    {
+      "id": 11,
+      "type": "expense",
+      "amount": 482307,
+      "date": "2026-08-13",
+      "category": "기타",
+      "payment": "계좌이체",
+      "memo": "[고정지출] 자동차 (기업은행)",
+      "is_fixed": 1
     }
   ],
   "fixed_expenses": [
