@@ -172,6 +172,15 @@
       "category": "주거/통신",
       "payment": "카드",
       "memo": "기업카드"
+    },
+    {
+      "id": 10,
+      "name": "자동이체",
+      "amount": 1000000,
+      "due_day": 10,
+      "category": "기타",
+      "payment": "계좌이체",
+      "memo": "기업은행"
     }
   ]
 }
