@@ -159,6 +159,16 @@
       "payment": "계좌이체",
       "memo": "[고정지출] 올란도 차보험(12개월) (기업은행)",
       "is_fixed": 1
+    },
+    {
+      "id": 17,
+      "type": "expense",
+      "amount": 45035,
+      "date": "2026-08-01",
+      "category": "보험/세금",
+      "payment": "계좌이체",
+      "memo": "[고정지출] 말리부차보험(12개월) (기업은행)",
+      "is_fixed": 1
     }
   ],
   "fixed_expenses": [
