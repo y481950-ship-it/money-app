@@ -181,16 +181,6 @@
       "is_fixed": 1
     },
     {
-      "id": 19,
-      "type": "income",
-      "amount": 4000000,
-      "date": "2026-08-10",
-      "category": "내 급여(10일)",
-      "payment": "카드",
-      "memo": "",
-      "is_fixed": 0
-    },
-    {
       "id": 20,
       "type": "income",
       "amount": 2500000,
