@@ -211,16 +211,6 @@
       "is_fixed": 0
     },
     {
-      "id": 24,
-      "type": "income",
-      "amount": 2500000,
-      "date": "2026-08-31",
-      "category": "아내 급여(30일)",
-      "payment": "현금",
-      "memo": "",
-      "is_fixed": 0
-    },
-    {
       "id": 25,
       "type": "income",
       "amount": 4000000,
