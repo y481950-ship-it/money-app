@@ -179,16 +179,6 @@
       "payment": "계좌이체",
       "memo": "[고정지출] 오토바이보험(12개월) (기업은행)",
       "is_fixed": 1
-    },
-    {
-      "id": 22,
-      "type": "income",
-      "amount": 4000000,
-      "date": "2026-08-31",
-      "category": "급여",
-      "payment": "현금",
-      "memo": "",
-      "is_fixed": 0
     }
   ],
   "fixed_expenses": [
