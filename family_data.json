@@ -179,6 +179,16 @@
       "payment": "계좌이체",
       "memo": "[고정지출] 오토바이보험(12개월) (기업은행)",
       "is_fixed": 1
+    },
+    {
+      "id": 19,
+      "type": "expense",
+      "amount": 2548816,
+      "date": "2026-08-31",
+      "category": "테스트",
+      "payment": "카드",
+      "memo": "테스트",
+      "is_fixed": 0
     }
   ],
   "fixed_expenses": [
