@@ -219,6 +219,16 @@
       "payment": "현금",
       "memo": "",
       "is_fixed": 0
+    },
+    {
+      "id": 23,
+      "type": "income",
+      "amount": 2500000,
+      "date": "2026-08-31",
+      "category": "급여",
+      "payment": "현금",
+      "memo": "",
+      "is_fixed": 0
     }
   ],
   "fixed_expenses": [
