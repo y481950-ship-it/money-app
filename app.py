@@ -191,7 +191,7 @@ HTML_TEMPLATE = """
             <div class="p-4 border-b bg-gray-50 space-y-3">
                 <div class="grid grid-cols-2 gap-2 bg-gray-200 p-1 rounded-lg">
                     <button type="button" id="tab-expense" class="py-2 text-sm font-bold rounded-md bg-red-500 text-white transition">지출 (-)</button>
-                    <button type="button" id="tab-income" class="py-2 text-sm font-bold rounded-md text-gray-600 transition">수입 (+)</button>
+                    <button type="button" id="tab-income" class="py-2 text-sm font-bold rounded-md bg-transparent text-gray-600 transition">수입 (+)</button>
                 </div>
 
                 <form id="tx-form" class="space-y-3">
@@ -465,14 +465,14 @@ HTML_TEMPLATE = """
         document.getElementById('tab-expense').addEventListener('click', () => {
             currentType = 'expense';
             document.getElementById('tab-expense').className = 'py-2 text-sm font-bold rounded-md bg-red-500 text-white transition';
-            document.getElementById('tab-income').className = 'py-2 text-sm font-bold rounded-md text-gray-600 transition';
+            document.getElementById('tab-income').className = 'py-2 text-sm font-bold rounded-md bg-transparent text-gray-600 transition';
             renderCategoryChips();
         });
 
         document.getElementById('tab-income').addEventListener('click', () => {
             currentType = 'income';
             document.getElementById('tab-income').className = 'py-2 text-sm font-bold rounded-md bg-blue-600 text-white transition';
-            document.getElementById('tab-expense').className = 'py-2 text-sm font-bold rounded-md text-gray-600 transition';
+            document.getElementById('tab-expense').className = 'py-2 text-sm font-bold rounded-md bg-transparent text-gray-600 transition';
             renderCategoryChips();
         });
 
@@ -618,7 +618,7 @@ HTML_TEMPLATE = """
 
             document.getElementById('comparison-content').innerHTML = `
                 <div>• <strong>변동지출:</strong> ${variableSum.toLocaleString()}원 (지난달 대비 ${varBadge})</div>
-                <div>• <strong>식비:</strong> ${curFood.toLocaleString()}원 (지난달 대비 ${foodBadge})</div>
+                <div>• <strong>식비/외식:</strong> ${curFood.toLocaleString()}원 (지난달 대비 ${foodBadge})</div>
             `;
         }
 
@@ -761,7 +761,11 @@ HTML_TEMPLATE = """
                 document.getElementById('tx-memo').value = '';
                 document.getElementById('tx-custom-category').value = '';
             }
-            loadAllData();
+            
+            const txDateVal = new Date(payload.date);
+            viewDate = new Date(txDateVal.getFullYear(), txDateVal.getMonth(), 1);
+            updateViewDateUI();
+            await loadAllData();
         });
 
         function editTx(id) {
