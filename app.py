@@ -12,6 +12,7 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
 GITHUB_REPO = os.environ.get("GITHUB_REPO")
 DATA_FILE = "family_data.json"
+BASE_MONTHLY_INCOME = 6500000  # 기본 고정 수입 650만 원
 
 def get_remote_data():
     default_data = {"transactions": [], "fixed_expenses": []}
@@ -151,7 +152,7 @@ HTML_TEMPLATE = """
         <div class="p-3 grid grid-cols-4 gap-1.5 bg-blue-50 border-b">
             <div class="bg-white p-2 rounded shadow-sm text-center">
                 <span class="text-[10px] text-gray-500 font-medium">총수입</span>
-                <p id="total-income" class="text-xs font-bold text-blue-600 truncate mt-0.5">0원</p>
+                <p id="total-income" class="text-xs font-bold text-blue-600 truncate mt-0.5">6,500,000원</p>
             </div>
             <div class="bg-white p-2 rounded shadow-sm text-center">
                 <span class="text-[10px] text-gray-500 font-medium">고정지출</span>
@@ -222,7 +223,7 @@ HTML_TEMPLATE = """
                         </div>
                     </div>
 
-                    <input type="text" id="tx-memo" placeholder="메모 (예: 점심 식사, 장보기)" class="w-full border p-2 rounded text-xs bg-white">
+                    <input type="text" id="tx-memo" placeholder="메모 (예: 점심 식사, 상여금)" class="w-full border p-2 rounded text-xs bg-white">
 
                     <div class="flex gap-2 pt-1">
                         <button type="submit" id="btn-submit" class="flex-1 bg-blue-600 text-white py-2.5 rounded-lg text-sm font-bold shadow hover:bg-blue-700 transition">추가하기</button>
@@ -263,7 +264,7 @@ HTML_TEMPLATE = """
         <div id="view-fixed" class="hidden flex-1 p-4 space-y-4">
             <div class="bg-orange-50 border border-orange-200 p-3 rounded-lg text-xs text-orange-800">
                 📌 <strong>고정지출 관리</strong><br>
-                등록된 고정지출은 상단 요약 카드에 즉시 합산되며, 매월 날짜에 맞춰 가계부 내역에도 자동 반영됩니다.
+                등록된 고정지출은 기본 수입 650만 원에서 즉시 차감 계산되며, 매월 날짜에 맞춰 가계부 내역에도 자동 반영됩니다.
             </div>
 
             <form id="fixed-form" class="bg-white p-3.5 border rounded-lg shadow-sm space-y-3">
@@ -327,7 +328,8 @@ HTML_TEMPLATE = """
         let viewDate = new Date();
 
         const expenseCategories = ['식비', '주유/교통', '마트/쇼핑', '생활/문화', '주거/통신', '금융/대출', '기타'];
-        const incomeCategories = ['내 급여(10일)', '아내 급여(30일)', '기타 수입'];
+        const incomeCategories = ['기타수입'];
+        const BASE_INCOME = 6500000;
 
         const daySelect = document.getElementById('fixed-day');
         for (let d = 1; d <= 31; d++) {
@@ -564,13 +566,14 @@ HTML_TEMPLATE = """
             const curTxs = transactions.filter(t => (t.date || '').startsWith(curPrefix));
             const prevTxs = transactions.filter(t => (t.date || '').startsWith(prevPrefix));
 
-            let income = 0;
+            // 기본 650만 원 고정 + 기타수입 합산
+            let extraIncome = 0;
             let variableSum = 0;
             let curFood = 0;
 
             curTxs.forEach(t => {
                 if (t.type === 'income') {
-                    income += Number(t.amount);
+                    extraIncome += Number(t.amount);
                 } else if (t.type === 'expense' && t.is_fixed === 0) {
                     variableSum += Number(t.amount);
                     if (t.category === '식비' || t.category === '외식') {
@@ -578,6 +581,8 @@ HTML_TEMPLATE = """
                     }
                 }
             });
+
+            const totalIncome = BASE_INCOME + extraIncome;
 
             let fixedSum = 0;
             fixedExpenses.forEach(f => {
@@ -595,11 +600,11 @@ HTML_TEMPLATE = """
                 }
             });
 
-            document.getElementById('total-income').innerText = income.toLocaleString() + '원';
+            document.getElementById('total-income').innerText = totalIncome.toLocaleString() + '원';
             document.getElementById('total-fixed').innerText = fixedSum.toLocaleString() + '원';
             document.getElementById('total-variable').innerText = variableSum.toLocaleString() + '원';
 
-            const bal = income - (fixedSum + variableSum);
+            const bal = totalIncome - (fixedSum + variableSum);
             const balEl = document.getElementById('balance');
             balEl.innerText = bal.toLocaleString() + '원';
             balEl.className = `text-xs font-bold truncate mt-0.5 ${bal < 0 ? 'text-red-500' : 'text-gray-800'}`;
@@ -776,8 +781,11 @@ HTML_TEMPLATE = """
             document.getElementById('tx-date').value = t.date;
             document.getElementById('tx-memo').value = t.memo || '';
 
-            if (t.type === 'expense') document.getElementById('tab-expense').click();
-            else document.getElementById('tab-income').click();
+            if (t.type === 'expense') {
+                document.getElementById('tab-expense').click();
+            } else {
+                document.getElementById('tab-income').click();
+            }
 
             const list = t.type === 'expense' ? expenseCategories : incomeCategories;
             if (list.includes(t.category)) {
@@ -1143,7 +1151,8 @@ def analyze():
 
     current_txs = [t for t in all_txs if str(t.get("date", "")).startswith(current_month_prefix)]
     
-    total_income = sum(int(t.get("amount", 0)) for t in current_txs if t.get("type") == "income")
+    extra_income = sum(int(t.get("amount", 0)) for t in current_txs if t.get("type") == "income")
+    total_income = BASE_MONTHLY_INCOME + extra_income
     total_fixed = sum(int(f.get("amount", 0)) for f in fixed_list)
     total_variable = sum(int(t.get("amount", 0)) for t in current_txs if t.get("type") == "expense" and t.get("is_fixed") == 0)
     balance = total_income - (total_fixed + total_variable)
@@ -1158,6 +1167,8 @@ def analyze():
 아래 제공된 [정확한 이번 달 집계 수치]를 100% 사실로 채택하여 피드백을 작성하세요.
 
 [이번 달({current_month_prefix}) 실제 재정 집계]
+- 기본 고정 수입: 6,500,000원
+- 기타 추가 수입: {extra_income:,}원
 - 총수입: {total_income:,}원
 - 고정지출: {total_fixed:,}원
 - 변동지출: {total_variable:,}원
