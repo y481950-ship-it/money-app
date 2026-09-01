@@ -264,7 +264,7 @@ HTML_TEMPLATE = """
         <div id="view-fixed" class="hidden flex-1 p-4 space-y-4">
             <div class="bg-orange-50 border border-orange-200 p-3 rounded-lg text-xs text-orange-800">
                 📌 <strong>고정지출 관리</strong><br>
-                등록된 고정지출은 기본 수입 650만 원에서 즉시 차감 계산되며, 매월 날짜에 맞춰 가계부 내역에도 자동 반영됩니다.
+                등록된 고정지출은 기본 수입 650만 원에서 즉시 차감 계산되며, 고정지출 목록은 이곳에서만 관리됩니다.
             </div>
 
             <form id="fixed-form" class="bg-white p-3.5 border rounded-lg shadow-sm space-y-3">
@@ -566,7 +566,6 @@ HTML_TEMPLATE = """
             const curTxs = transactions.filter(t => (t.date || '').startsWith(curPrefix));
             const prevTxs = transactions.filter(t => (t.date || '').startsWith(prevPrefix));
 
-            // 기본 650만 원 고정 + 기타수입 합산
             let extraIncome = 0;
             let variableSum = 0;
             let curFood = 0;
@@ -608,7 +607,10 @@ HTML_TEMPLATE = """
             const balEl = document.getElementById('balance');
             balEl.innerText = bal.toLocaleString() + '원';
             balEl.className = `text-xs font-bold truncate mt-0.5 ${bal < 0 ? 'text-red-500' : 'text-gray-800'}`;
-            document.getElementById('tx-count').innerText = curTxs.length;
+
+            // 메인 화면에서는 사용자가 직접 추가한 내역 건수만 표시
+            const userOnlyTxs = curTxs.filter(t => t.is_fixed === 0);
+            document.getElementById('tx-count').innerText = userOnlyTxs.length;
 
             const diffVar = variableSum - prevVariable;
             const diffFood = curFood - prevFood;
@@ -631,12 +633,14 @@ HTML_TEMPLATE = """
             const year = viewDate.getFullYear();
             const month = viewDate.getMonth() + 1;
             const curPrefix = `${year}-${String(month).padStart(2, '0')}`;
-            const curTxs = transactions.filter(t => (t.date || '').startsWith(curPrefix));
+            
+            // ⭐ 고정지출(is_fixed === 1)을 제외하고, 직접 추가한 일반 지출/수입만 필터링
+            const curTxs = transactions.filter(t => (t.date || '').startsWith(curPrefix) && t.is_fixed === 0);
 
             const listEl = document.getElementById('tx-list');
             listEl.innerHTML = '';
             if (!curTxs.length) {
-                listEl.innerHTML = '<li class="text-center text-xs text-gray-400 py-6">해당 월에 등록된 내역이 없습니다.</li>';
+                listEl.innerHTML = '<li class="text-center text-xs text-gray-400 py-6">해당 월에 등록된 일반 내역이 없습니다.</li>';
                 return;
             }
 
@@ -648,7 +652,6 @@ HTML_TEMPLATE = """
                     <div class="min-w-0 pr-2">
                         <div class="flex items-center gap-1.5">
                             <span class="font-bold text-xs text-gray-800">${t.category}</span>
-                            ${t.is_fixed === 1 ? '<span class="text-[9px] bg-orange-100 text-orange-700 px-1 py-0.5 rounded font-bold">고정</span>' : ''}
                             <span class="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">${t.payment}</span>
                         </div>
                         <div class="text-[11px] text-gray-500 truncate mt-0.5">${t.memo ? t.memo + ' · ' : ''}${t.date}</div>
@@ -703,7 +706,7 @@ HTML_TEMPLATE = """
             const year = viewDate.getFullYear();
             const month = viewDate.getMonth() + 1;
             const curPrefix = `${year}-${String(month).padStart(2, '0')}`;
-            const curTxs = transactions.filter(t => (t.date || '').startsWith(curPrefix));
+            const curTxs = transactions.filter(t => (t.date || '').startsWith(curPrefix) && t.is_fixed === 0);
 
             const ctx = document.getElementById('categoryChart').getContext('2d');
             const totals = {};
@@ -719,7 +722,7 @@ HTML_TEMPLATE = """
             chartInstance = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: labels.length ? labels : ['지출 내역 없음'],
+                    labels: labels.length ? labels : ['변동지출 내역 없음'],
                     datasets: [{
                         data: data.length ? data : [1],
                         backgroundColor: ['#f87171', '#fb923c', '#facc15', '#4ade80', '#60a5fa', '#a78bfa', '#9ca3af']
@@ -855,7 +858,7 @@ HTML_TEMPLATE = """
                 resetFixedForm();
             }
             await loadAllData();
-            alert('고정지출이 저장되었으며 상단 합계 및 이번 달 내역에 즉시 반영되었습니다.');
+            alert('고정지출이 저장되었으며 상단 합계에 즉시 반영되었습니다.');
         });
 
         function editFixed(id) {
@@ -893,10 +896,11 @@ HTML_TEMPLATE = """
         }
 
         document.getElementById('btn-export-csv').addEventListener('click', () => {
-            if (!transactions.length) return alert('저장할 내역이 없습니다.');
-            let csv = "날짜,구분,카테고리,금액,결제수단,메모,고정여부\\n";
-            transactions.forEach(t => {
-                csv += `"${t.date}","${t.type === 'expense' ? '지출' : '수입'}","${t.category}",${t.amount},"${t.payment}","${t.memo || ''}","${t.is_fixed ? '고정지출' : '일반'}"\\n`;
+            const userOnlyTxs = transactions.filter(t => t.is_fixed === 0);
+            if (!userOnlyTxs.length) return alert('저장할 내역이 없습니다.');
+            let csv = "날짜,구분,카테고리,금액,결제수단,메모\\n";
+            userOnlyTxs.forEach(t => {
+                csv += `"${t.date}","${t.type === 'expense' ? '지출' : '수입'}","${t.category}",${t.amount},"${t.payment}","${t.memo || ''}"\\n`;
             });
             const blob = new Blob(["\\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('link');
