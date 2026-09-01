@@ -349,6 +349,16 @@
       "payment": "계좌이체",
       "memo": "[고정지출] 오토바이보험(12개월) (기업은행)",
       "is_fixed": 1
+    },
+    {
+      "id": 36,
+      "type": "expense",
+      "amount": 50000,
+      "date": "2026-09-01",
+      "category": "주유/교통",
+      "payment": "카드",
+      "memo": "올란도 충전 하나카드",
+      "is_fixed": 0
     }
   ],
   "fixed_expenses": [
