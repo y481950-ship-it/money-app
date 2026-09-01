@@ -189,6 +189,166 @@
       "payment": "카드",
       "memo": "테스트",
       "is_fixed": 0
+    },
+    {
+      "id": 20,
+      "type": "expense",
+      "amount": 1136781,
+      "date": "2026-09-12",
+      "category": "주거/통신",
+      "payment": "계좌이체",
+      "memo": "[고정지출] 집대출 (카카오뱅크)",
+      "is_fixed": 1
+    },
+    {
+      "id": 21,
+      "type": "expense",
+      "amount": 482307,
+      "date": "2026-09-13",
+      "category": "기타",
+      "payment": "계좌이체",
+      "memo": "[고정지출] 자동차 (기업은행)",
+      "is_fixed": 1
+    },
+    {
+      "id": 22,
+      "type": "expense",
+      "amount": 65000,
+      "date": "2026-09-10",
+      "category": "주거/통신",
+      "payment": "계좌이체",
+      "memo": "[고정지출] 세광임대료 (기업은행)",
+      "is_fixed": 1
+    },
+    {
+      "id": 23,
+      "type": "expense",
+      "amount": 10000,
+      "date": "2026-09-10",
+      "category": "생활/문화",
+      "payment": "계좌이체",
+      "memo": "[고정지출] 산악회 (기업은행)",
+      "is_fixed": 1
+    },
+    {
+      "id": 24,
+      "type": "expense",
+      "amount": 300000,
+      "date": "2026-09-10",
+      "category": "생활/문화",
+      "payment": "계좌이체",
+      "memo": "[고정지출] 용돈 (기업은행)",
+      "is_fixed": 1
+    },
+    {
+      "id": 25,
+      "type": "expense",
+      "amount": 277908,
+      "date": "2026-09-13",
+      "category": "보험/세금",
+      "payment": "계좌이체",
+      "memo": "[고정지출] 보험료 (기업은행)",
+      "is_fixed": 1
+    },
+    {
+      "id": 26,
+      "type": "expense",
+      "amount": 16606,
+      "date": "2026-09-13",
+      "category": "보험/세금",
+      "payment": "계좌이체",
+      "memo": "[고정지출] 자동차운전자보험 (기업은행)",
+      "is_fixed": 1
+    },
+    {
+      "id": 27,
+      "type": "expense",
+      "amount": 27165,
+      "date": "2026-09-13",
+      "category": "보험/세금",
+      "payment": "계좌이체",
+      "memo": "[고정지출] 오토바이운전자보험 (기업은행)",
+      "is_fixed": 1
+    },
+    {
+      "id": 28,
+      "type": "expense",
+      "amount": 201000,
+      "date": "2026-09-15",
+      "category": "주거/통신",
+      "payment": "카드",
+      "memo": "[고정지출] 핸드폰.티비.인터넷 (기업카드)",
+      "is_fixed": 1
+    },
+    {
+      "id": 29,
+      "type": "expense",
+      "amount": 1000000,
+      "date": "2026-09-10",
+      "category": "기타",
+      "payment": "계좌이체",
+      "memo": "[고정지출] 자동이체 (기업은행)",
+      "is_fixed": 1
+    },
+    {
+      "id": 30,
+      "type": "expense",
+      "amount": 35910,
+      "date": "2026-09-27",
+      "category": "기타",
+      "payment": "계좌이체",
+      "memo": "[고정지출] 정수기 (농협)",
+      "is_fixed": 1
+    },
+    {
+      "id": 31,
+      "type": "expense",
+      "amount": 237210,
+      "date": "2026-09-01",
+      "category": "보험/세금",
+      "payment": "계좌이체",
+      "memo": "[고정지출] 보험료 (농협)",
+      "is_fixed": 1
+    },
+    {
+      "id": 32,
+      "type": "expense",
+      "amount": 30000,
+      "date": "2026-09-05",
+      "category": "보험/세금",
+      "payment": "계좌이체",
+      "memo": "[고정지출] 화재보험 (농협)",
+      "is_fixed": 1
+    },
+    {
+      "id": 33,
+      "type": "expense",
+      "amount": 65120,
+      "date": "2026-09-01",
+      "category": "보험/세금",
+      "payment": "계좌이체",
+      "memo": "[고정지출] 올란도 차보험(12개월) (기업은행)",
+      "is_fixed": 1
+    },
+    {
+      "id": 34,
+      "type": "expense",
+      "amount": 45035,
+      "date": "2026-09-01",
+      "category": "보험/세금",
+      "payment": "계좌이체",
+      "memo": "[고정지출] 말리부차보험(12개월) (기업은행)",
+      "is_fixed": 1
+    },
+    {
+      "id": 35,
+      "type": "expense",
+      "amount": 21142,
+      "date": "2026-09-01",
+      "category": "보험/세금",
+      "payment": "계좌이체",
+      "memo": "[고정지출] 오토바이보험(12개월) (기업은행)",
+      "is_fixed": 1
     }
   ],
   "fixed_expenses": [
