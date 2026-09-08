@@ -369,6 +369,16 @@
       "payment": "카드",
       "memo": "저녁식사 농협 체크카드 ",
       "is_fixed": 0
+    },
+    {
+      "id": 38,
+      "type": "expense",
+      "amount": 109710,
+      "date": "2026-09-07",
+      "category": "마트/쇼핑",
+      "payment": "카드",
+      "memo": "마트 농협체크카드",
+      "is_fixed": 0
     }
   ],
   "fixed_expenses": [
