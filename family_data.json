@@ -359,6 +359,16 @@
       "payment": "카드",
       "memo": "올란도 충전 하나카드",
       "is_fixed": 0
+    },
+    {
+      "id": 37,
+      "type": "expense",
+      "amount": 50000,
+      "date": "2026-09-06",
+      "category": "식비",
+      "payment": "카드",
+      "memo": "저녁식사 농협 체크카드 ",
+      "is_fixed": 0
     }
   ],
   "fixed_expenses": [
