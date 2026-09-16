@@ -409,6 +409,16 @@
       "payment": "카드",
       "memo": "현대카드",
       "is_fixed": 0
+    },
+    {
+      "id": 42,
+      "type": "expense",
+      "amount": 24000,
+      "date": "2026-09-15",
+      "category": "식비",
+      "payment": "카드",
+      "memo": "딸이랑 점심 농협 체크카드 ",
+      "is_fixed": 0
     }
   ],
   "fixed_expenses": [
