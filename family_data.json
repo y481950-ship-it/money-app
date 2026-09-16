@@ -405,9 +405,9 @@
       "type": "expense",
       "amount": 93550,
       "date": "2026-09-15",
-      "category": "말리부주유",
+      "category": "식비",
       "payment": "카드",
-      "memo": "현대카드",
+      "memo": "말리부 주유 현대카드",
       "is_fixed": 0
     },
     {
