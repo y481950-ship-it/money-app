@@ -385,9 +385,9 @@
       "type": "expense",
       "amount": 161070,
       "date": "2026-09-10",
-      "category": "집들이",
+      "category": "마트/쇼핑",
       "payment": "카드",
-      "memo": "현대카드",
+      "memo": "집들이 현대카드",
       "is_fixed": 0
     },
     {
