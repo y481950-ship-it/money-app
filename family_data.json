@@ -379,6 +379,16 @@
       "payment": "카드",
       "memo": "마트 농협체크카드",
       "is_fixed": 0
+    },
+    {
+      "id": 39,
+      "type": "expense",
+      "amount": 161070,
+      "date": "2026-09-10",
+      "category": "집들이",
+      "payment": "카드",
+      "memo": "현대카드",
+      "is_fixed": 0
     }
   ],
   "fixed_expenses": [
