@@ -395,9 +395,9 @@
       "type": "expense",
       "amount": 80000,
       "date": "2026-09-10",
-      "category": "유영건강검진",
+      "category": "병원",
       "payment": "카드",
-      "memo": "농협체크카드",
+      "memo": "딸 건강검진 농협체크카드",
       "is_fixed": 0
     },
     {
