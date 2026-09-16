@@ -399,6 +399,16 @@
       "payment": "카드",
       "memo": "농협체크카드",
       "is_fixed": 0
+    },
+    {
+      "id": 41,
+      "type": "expense",
+      "amount": 93550,
+      "date": "2026-09-15",
+      "category": "말리부주유",
+      "payment": "카드",
+      "memo": "현대카드",
+      "is_fixed": 0
     }
   ],
   "fixed_expenses": [
