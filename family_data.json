@@ -429,6 +429,16 @@
       "payment": "이체",
       "memo": "신발",
       "is_fixed": 0
+    },
+    {
+      "id": 44,
+      "type": "expense",
+      "amount": 33000,
+      "date": "2026-09-17",
+      "category": "기타",
+      "payment": "이체",
+      "memo": "유영바지",
+      "is_fixed": 0
     }
   ],
   "fixed_expenses": [
