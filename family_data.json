@@ -439,6 +439,16 @@
       "payment": "이체",
       "memo": "유영바지",
       "is_fixed": 0
+    },
+    {
+      "id": 45,
+      "type": "expense",
+      "amount": 18300,
+      "date": "2026-09-18",
+      "category": "식비",
+      "payment": "카드",
+      "memo": "시영돈까스",
+      "is_fixed": 0
     }
   ],
   "fixed_expenses": [
