@@ -419,6 +419,16 @@
       "payment": "카드",
       "memo": "딸이랑 점심 농협 체크카드 ",
       "is_fixed": 0
+    },
+    {
+      "id": 43,
+      "type": "expense",
+      "amount": 83000,
+      "date": "2026-09-17",
+      "category": "기타",
+      "payment": "이체",
+      "memo": "신발",
+      "is_fixed": 0
     }
   ],
   "fixed_expenses": [
