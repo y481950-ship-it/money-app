@@ -479,6 +479,16 @@
       "payment": "카드",
       "memo": "케익 농협체크",
       "is_fixed": 0
+    },
+    {
+      "id": 49,
+      "type": "expense",
+      "amount": 65000,
+      "date": "2026-09-11",
+      "category": "기타",
+      "payment": "카드",
+      "memo": "집들이 음식 농협체크 ",
+      "is_fixed": 0
     }
   ],
   "fixed_expenses": [
