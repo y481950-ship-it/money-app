@@ -459,6 +459,16 @@
       "payment": "카드",
       "memo": "딸 겅진후 점심 농협체크",
       "is_fixed": 0
+    },
+    {
+      "id": 47,
+      "type": "expense",
+      "amount": 35000,
+      "date": "2026-09-10",
+      "category": "마트/쇼핑",
+      "payment": "카드",
+      "memo": "롯데마트  농협체크",
+      "is_fixed": 0
     }
   ],
   "fixed_expenses": [
