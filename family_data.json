@@ -449,6 +449,16 @@
       "payment": "카드",
       "memo": "시영돈까스 농협체크",
       "is_fixed": 0
+    },
+    {
+      "id": 46,
+      "type": "expense",
+      "amount": 36800,
+      "date": "2026-09-10",
+      "category": "식비",
+      "payment": "카드",
+      "memo": "딸 겅진후 점심 농협체크",
+      "is_fixed": 0
     }
   ],
   "fixed_expenses": [
