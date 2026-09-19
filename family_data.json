@@ -469,6 +469,16 @@
       "payment": "카드",
       "memo": "롯데마트  농협체크",
       "is_fixed": 0
+    },
+    {
+      "id": 48,
+      "type": "expense",
+      "amount": 33700,
+      "date": "2026-09-10",
+      "category": "기타",
+      "payment": "카드",
+      "memo": "케익 농협체크",
+      "is_fixed": 0
     }
   ],
   "fixed_expenses": [
