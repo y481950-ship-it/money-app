@@ -499,6 +499,16 @@
       "payment": "카드",
       "memo": "",
       "is_fixed": 0
+    },
+    {
+      "id": 51,
+      "type": "expense",
+      "amount": 16000,
+      "date": "2026-09-04",
+      "category": "바이크",
+      "payment": "카드",
+      "memo": "바이크",
+      "is_fixed": 0
     }
   ],
   "fixed_expenses": [
