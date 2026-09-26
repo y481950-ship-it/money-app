@@ -541,16 +541,6 @@
       "is_fixed": 0
     },
     {
-      "id": 56,
-      "type": "expense",
-      "amount": 14000,
-      "date": "2026-09-13",
-      "category": "주유/교통",
-      "payment": "카드",
-      "memo": "바이크 하나카드",
-      "is_fixed": 0
-    },
-    {
       "id": 57,
       "type": "expense",
       "amount": 14000,
