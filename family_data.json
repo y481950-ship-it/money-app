@@ -539,6 +539,16 @@
       "payment": "카드",
       "memo": "올란도 충전 하나카드",
       "is_fixed": 0
+    },
+    {
+      "id": 55,
+      "type": "expense",
+      "amount": 54862,
+      "date": "2026-09-10",
+      "category": "주유/교통",
+      "payment": "카드",
+      "memo": "올란도 충전 하나카드",
+      "is_fixed": 0
     }
   ],
   "fixed_expenses": [
