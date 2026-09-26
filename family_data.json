@@ -489,6 +489,16 @@
       "payment": "카드",
       "memo": "집들이 음식 농협체크 ",
       "is_fixed": 0
+    },
+    {
+      "id": 50,
+      "type": "expense",
+      "amount": 16000,
+      "date": "2026-09-04",
+      "category": "주유/교통",
+      "payment": "카드",
+      "memo": "",
+      "is_fixed": 0
     }
   ],
   "fixed_expenses": [
