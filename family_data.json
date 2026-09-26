@@ -569,6 +569,16 @@
       "payment": "카드",
       "memo": "하나카드 커피",
       "is_fixed": 0
+    },
+    {
+      "id": 59,
+      "type": "expense",
+      "amount": 13000,
+      "date": "2026-09-20",
+      "category": "생활/문화",
+      "payment": "카드",
+      "memo": "하나카드 커피",
+      "is_fixed": 0
     }
   ],
   "fixed_expenses": [
