@@ -511,16 +511,6 @@
       "is_fixed": 0
     },
     {
-      "id": 53,
-      "type": "expense",
-      "amount": 54862,
-      "date": "2026-09-10",
-      "category": "주유/교통",
-      "payment": "카드",
-      "memo": "올란도",
-      "is_fixed": 0
-    },
-    {
       "id": 54,
       "type": "expense",
       "amount": 54862,
