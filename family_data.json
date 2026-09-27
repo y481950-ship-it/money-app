@@ -629,6 +629,16 @@
       "payment": "카드",
       "memo": "오빠컷트 농협체크 ",
       "is_fixed": 0
+    },
+    {
+      "id": 68,
+      "type": "expense",
+      "amount": 27400,
+      "date": "2026-09-25",
+      "category": "식비",
+      "payment": "카드",
+      "memo": "피자 농협체크 ",
+      "is_fixed": 0
     }
   ],
   "fixed_expenses": [
