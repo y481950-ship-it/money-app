@@ -619,6 +619,16 @@
       "payment": "카드",
       "memo": "나 컷트 농협체크 ",
       "is_fixed": 0
+    },
+    {
+      "id": 67,
+      "type": "expense",
+      "amount": 20000,
+      "date": "2026-09-23",
+      "category": "기타",
+      "payment": "카드",
+      "memo": "오빠컷트 농협체크 ",
+      "is_fixed": 0
     }
   ],
   "fixed_expenses": [
