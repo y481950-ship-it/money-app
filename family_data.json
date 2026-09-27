@@ -569,6 +569,16 @@
       "payment": "카드",
       "memo": "바이크 하나카드",
       "is_fixed": 0
+    },
+    {
+      "id": 62,
+      "type": "expense",
+      "amount": 98200,
+      "date": "2026-09-19",
+      "category": "기타",
+      "payment": "카드",
+      "memo": "다이소 농협체크 ",
+      "is_fixed": 0
     }
   ],
   "fixed_expenses": [
