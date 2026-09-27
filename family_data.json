@@ -599,6 +599,16 @@
       "payment": "카드",
       "memo": "올란도오일 농협체크 ",
       "is_fixed": 0
+    },
+    {
+      "id": 65,
+      "type": "expense",
+      "amount": 93550,
+      "date": "2026-09-26",
+      "category": "주유/교통",
+      "payment": "카드",
+      "memo": "말리부기름 현대카드 ",
+      "is_fixed": 0
     }
   ],
   "fixed_expenses": [
