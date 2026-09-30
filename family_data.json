@@ -639,6 +639,16 @@
       "payment": "카드",
       "memo": "피자 농협체크 ",
       "is_fixed": 0
+    },
+    {
+      "id": 69,
+      "type": "expense",
+      "amount": 48939,
+      "date": "2026-09-30",
+      "category": "주유/교통",
+      "payment": "카드",
+      "memo": "올란도 충전 하나카드",
+      "is_fixed": 0
     }
   ],
   "fixed_expenses": [
