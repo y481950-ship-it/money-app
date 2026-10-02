@@ -909,6 +909,16 @@
       "payment": "카드",
       "memo": "유영옷 농협체크 ",
       "is_fixed": 0
+    },
+    {
+      "id": 96,
+      "type": "expense",
+      "amount": 111000,
+      "date": "2026-09-24",
+      "category": "식비",
+      "payment": "카드",
+      "memo": "여내울 농협체크 ",
+      "is_fixed": 0
     }
   ],
   "fixed_expenses": [
