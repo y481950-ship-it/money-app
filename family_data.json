@@ -829,6 +829,16 @@
       "payment": "카드",
       "memo": "유영.엄마 점심 농협체크 ",
       "is_fixed": 0
+    },
+    {
+      "id": 88,
+      "type": "expense",
+      "amount": 8000,
+      "date": "2026-09-28",
+      "category": "기타",
+      "payment": "카드",
+      "memo": "감기약 농협체크 ",
+      "is_fixed": 0
     }
   ],
   "fixed_expenses": [
