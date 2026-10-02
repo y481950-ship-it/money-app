@@ -879,6 +879,16 @@
       "payment": "카드",
       "memo": "시영미용실 농협체크 ",
       "is_fixed": 0
+    },
+    {
+      "id": 93,
+      "type": "expense",
+      "amount": 39699,
+      "date": "2026-09-30",
+      "category": "마트/쇼핑",
+      "payment": "카드",
+      "memo": "유영 지갑  농협체크 ",
+      "is_fixed": 0
     }
   ],
   "fixed_expenses": [
