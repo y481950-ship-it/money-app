@@ -859,6 +859,16 @@
       "payment": "카드",
       "memo": "햄버거 농협체크 ",
       "is_fixed": 0
+    },
+    {
+      "id": 91,
+      "type": "expense",
+      "amount": 19200,
+      "date": "2026-09-29",
+      "category": "마트/쇼핑",
+      "payment": "카드",
+      "memo": "프리마컷 농협체크 ",
+      "is_fixed": 0
     }
   ],
   "fixed_expenses": [
