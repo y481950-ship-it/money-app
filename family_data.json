@@ -849,6 +849,16 @@
       "payment": "카드",
       "memo": "유영옷 농협체크 ",
       "is_fixed": 0
+    },
+    {
+      "id": 90,
+      "type": "expense",
+      "amount": 20100,
+      "date": "2026-09-29",
+      "category": "식비",
+      "payment": "카드",
+      "memo": "햄버거 농협체크 ",
+      "is_fixed": 0
     }
   ],
   "fixed_expenses": [
