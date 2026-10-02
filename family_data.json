@@ -869,6 +869,16 @@
       "payment": "카드",
       "memo": "프리마컷 농협체크 ",
       "is_fixed": 0
+    },
+    {
+      "id": 92,
+      "type": "expense",
+      "amount": 16000,
+      "date": "2026-09-29",
+      "category": "생활/문화",
+      "payment": "카드",
+      "memo": "시영미용실",
+      "is_fixed": 0
     }
   ],
   "fixed_expenses": [
